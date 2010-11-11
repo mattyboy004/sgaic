@@ -1,25 +1,22 @@
 import java.util.*;
 
 public class MyBot {
-    // The DoTurn function is where your code goes. The PlanetWars object
-    // contains the state of the game, including information about all planets
-    // and fleets that currently exist. Inside this function, you issue orders
-    // using the pw.IssueOrder() function. For example, to send 10 ships from
-    // planet 3 to planet 8, you would say pw.IssueOrder(3, 8, 10).
-    //
-    // There is already a basic strategy in place here. You can use it as a
-    // starting point, or you can throw it out entirely and replace it with
-    // your own. Check out the tutorials and articles on the contest website at
-    // http://www.ai-contest.com/resources.
+    /**
+    *Segundo Bot, melhoria m cima do primeiro
+    *A ideia do bot eh soh mandar naves para planetas que vai consquistar imediatemante e ter "lucro" com isso,
+    *ou seja, apos consquistar vai ganhar bastante naves nesse planeta( ou evitar o oponente de ganhar)
+    *
+    *mudanca 0: atcar com valores diferentes de metadinha do atual OK!
+    *mudanca 1: versao anterior nao levava em conta que o planeta do inimigo cresce com no intervalo de vc mandar as naves e elas chegarem OK!
+    *mudanca 2: levar em conta as naves que jah tao indo para aquela direcao OK!
+    *
+    */
     public static void DoTurn(PlanetWars pw) {
-	// (1) If we currently have a fleet in flight, just do nothing.
-	/*if (pw.MyFleets().size() >= 1) {
-	    return;
-	}*/
-	int max_turns=30;
+
+	int max_turns=30;//cartas...
 	for(Planet p : pw.MyPlanets())
 	{
-		int score = (int)p.NumShips()/2;
+		int score = p.NumShips();
 		int best = -1;
 		Planet dest = new Planet(0,0,0,0,0,0);//java suga :P
 		int losing = 0;
@@ -28,34 +25,46 @@ public class MyBot {
 			if(f.DestinationPlanet()==p.PlanetID())
 				losing+=f.NumShips();
 		}
-		if(losing>=score/2)
+		if(2*losing>=score)//evita perder planetas
 			continue;
+		score-=losing;//ataca com o que sobra
 		for (Planet q : pw.NotMyPlanets()) 
 		{
 			boolean has_sent = false;
-			for (Fleet f : pw.MyFleets())
+			int enemy_score=0;
+			for (Fleet f : pw.MyFleets())//jah atacaram esse planeta nesse turno, sem isso todo mundo ataca o msm
 			{
 				if(f.DestinationPlanet()==q.PlanetID())
 				{
 					has_sent = true;
 					break;
 				}
-			
+			}
+			for (Fleet f : pw.EnemyFleets())//jah atacaram esse planeta nesse turno, sem isso todo mundo ataca o msm
+			{
+				if(f.DestinationPlanet()==q.PlanetID())
+				{
+					enemy_score+=f.NumShips();
+				}
 			}
 			if(has_sent)
 				continue;
-	  		int enemy_score = (int)q.NumShips();
-	   		 if(enemy_score>=score)
+	  		enemy_score += (int)q.NumShips();
+	  			   			   		 
+	   		int turns = pw.Distance(p.PlanetID(),q.PlanetID());
+	   		if(turns>max_turns)
+	   			continue;
+	   		 
+	   		if(q.Owner()>1)//planeta do inimigo
+	  			enemy_score+=turns*q.GrowthRate();
+	  		
+	  		if(enemy_score>=score)//nao vale a pena?(toh carteando...)
 	   		 	continue;
-	   		 int lost = score-enemy_score ;
-	   		 
-	   		 int turns = pw.Distance(p.PlanetID(),q.PlanetID());
-	   		 if(turns>max_turns)continue;
-	   		 
-	   		 int win = (max_turns-turns)*q.GrowthRate();
+	   		 	
+	   		 int win = (max_turns-turns)*q.GrowthRate() - enemy_score;
 	   		 if(q.Owner()>1)
 	   		 	win+=(max_turns-turns)*q.GrowthRate();//inimigo nao ganha
-	   		 if(win>best)
+	   		 if(win>best)//tenta atacar onde mais ganha naves
 	   		 {
 				best = win;
 				dest = q;
