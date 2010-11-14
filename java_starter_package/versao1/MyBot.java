@@ -2,33 +2,23 @@ import java.util.*;
 
 public class MyBot {
     /**
-    *terceiro Bot, melhoria m cima do segundo
+    *Segundo Bot, melhoria m cima do primeiro
     *A ideia do bot eh soh mandar naves para planetas que vai consquistar imediatemante e ter "lucro" com isso,
     *ou seja, apos consquistar vai ganhar bastante naves nesse planeta( ou evitar o oponente de ganhar)
     *
     *mudanca 0: atcar com valores diferentes de metadinha do atual OK!
     *mudanca 1: versao anterior nao levava em conta que o planeta do inimigo cresce com no intervalo de vc mandar as naves e elas chegarem OK!
     *mudanca 2: levar em conta as naves que jah tao indo para aquela direcao OK!
-    *resultado pos 1100 para 800 \o/
-    *mudanca 3: ataca soh com o que precisa
-    *mudanca 4: outras bases podem auxiliar
-    *mudanca 5: leva um pouco menos em conta que vai conquistar de fato o planeta do inimigo
     *
     */
-    static public PlanetWars pw;
     public static void DoTurn(PlanetWars pw) {
-	 
+
 	int max_turns=30;//cartas...
-	//ArrayList<Integer> perde = new ArrayList<Integer> (pw.NumPlanets())//porra de java suga do caralho porra de array de "integer" vtnc .get, .set pqp sugacao grautuita,foda-se , vou declrar um array grandao que nao suga tanto..
-	//int [] perde= new int[pw.NumPlanets()];//tudo isso soh pra declarar um array...
-
-
-	
 	for(Planet p : pw.MyPlanets())
 	{
 		int score = p.NumShips();
 		int best = -1;
-		Planet dest = null;//java suga :P
+		Planet dest = new Planet(0,0,0,0,0,0);//java suga :P
 		int losing = 0;
 		for(Fleet f : pw.EnemyFleets())
 		{
@@ -37,29 +27,29 @@ public class MyBot {
 		}
 		if(2*losing>=score)//evita perder planetas
 			continue;
-		score-=losing;//ataca com o que sobra, meio burro...
-		int attack = 0;
+		score-=losing;//ataca com o que sobra
 		for (Planet q : pw.NotMyPlanets()) 
 		{
-			int has_sent = 0;
+			boolean has_sent = false;
 			int enemy_score=0;
-			for (Fleet f : pw.MyFleets())
+			for (Fleet f : pw.MyFleets())//jah atacaram esse planeta nesse turno, sem isso todo mundo ataca o msm
 			{
 				if(f.DestinationPlanet()==q.PlanetID())
 				{
-					has_sent +=f.NumShips();
-					
+					has_sent = true;
+					break;
 				}
 			}
-			for (Fleet f : pw.EnemyFleets())
+			for (Fleet f : pw.EnemyFleets())//jah atacaram esse planeta nesse turno, sem isso todo mundo ataca o msm
 			{
 				if(f.DestinationPlanet()==q.PlanetID())
 				{
 					enemy_score+=f.NumShips();
 				}
 			}
-				  		
-			enemy_score += (int)q.NumShips();
+			if(has_sent)
+				continue;
+	  		enemy_score += (int)q.NumShips();
 	  			   			   		 
 	   		int turns = pw.Distance(p.PlanetID(),q.PlanetID());
 	   		if(turns>max_turns)
@@ -68,26 +58,51 @@ public class MyBot {
 	   		if(q.Owner()>1)//planeta do inimigo
 	  			enemy_score+=turns*q.GrowthRate();
 	  		
-	  		if(enemy_score-has_sent>=score)//nao vale a pena?(toh carteando...)
+	  		if(enemy_score>=score)//nao vale a pena?(toh carteando...)
 	   		 	continue;
 	   		 	
 	   		 int win = (max_turns-turns)*q.GrowthRate() - enemy_score;
 	   		 if(q.Owner()>1)
-	   		 	win+=enemy_score;//inimigo perde
-			  
-	   		 if(win>best)//tenta atacar onde mais ganha naves, sem atacar mais que o necessario
+	   		 	win+=(max_turns-turns)*q.GrowthRate();//inimigo nao ganha
+	   		 if(win>best)//tenta atacar onde mais ganha naves
 	   		 {
 				best = win;
 				dest = q;
-				attack = 1+enemy_score - has_sent;
 	   		 }
 	    	}
-	    if(best>0 && attack>0)
+	    if(best>0)
 	    {
-	    	 pw.IssueOrder(p, dest,attack);
+	    	 pw.IssueOrder(p, dest, score);
 	    }
 	}
-
+	
+	/*
+	// (2) Find my strongest planet.
+	Planet source = null;
+	double sourceScore = Double.MIN_VALUE;
+	for (Planet p : pw.MyPlanets()) {
+	    double score = (double)p.NumShips();
+	    if (score > sourceScore) {
+		sourceScore = score;
+		source = p;
+	    }
+	}
+	// (3) Find the weakest enemy or neutral planet.
+	Planet dest = null;
+	double destScore = Double.MIN_VALUE;
+	for (Planet p : pw.NotMyPlanets()) {
+	    double score = 1.0 / (1 + p.NumShips());
+	    if (score > destScore) {
+		destScore = score;
+		dest = p;
+	    }
+	}
+	// (4) Send half the ships from my strongest planet to the weakest
+	// planet that I do not own.
+	if (source != null && dest != null) {
+	    int numShips = source.NumShips() / 2;
+	    pw.IssueOrder(source, dest, numShips);
+	}*/
     }
 
     public static void main(String[] args) {
@@ -99,7 +114,7 @@ public class MyBot {
 		switch (c) {
 		case '\n':
 		    if (line.equals("go")) {
-			 pw = new PlanetWars(message);
+			PlanetWars pw = new PlanetWars(message);
 			DoTurn(pw);
 		        pw.FinishTurn();
 			message = "";

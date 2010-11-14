@@ -2,7 +2,7 @@ import java.util.*;
 
 public class MyBot {
     /**
-    *terceiro Bot, melhoria m cima do segundo
+    *Segundo Bot, melhoria m cima do primeiro
     *A ideia do bot eh soh mandar naves para planetas que vai consquistar imediatemante e ter "lucro" com isso,
     *ou seja, apos consquistar vai ganhar bastante naves nesse planeta( ou evitar o oponente de ganhar)
     *
