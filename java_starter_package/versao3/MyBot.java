@@ -16,7 +16,6 @@ public class MyBot {
     ******
     * mudanca 6: versao anterior fica atacando soh o msm... arrumando isso possbilitando cada planeta atacar mais de um alvo
     *mudanca 7: calculo dinamico de max_t	
-    * mudanca8: defesa
     */
     static int[] dono = new int [150];
     public static void DoTurn(PlanetWars pw) {
@@ -45,13 +44,11 @@ public class MyBot {
 		if(f.TurnsRemaining()>demora[f.DestinationPlanet()])
 			demora[f.DestinationPlanet()]=f.TurnsRemaining();
 	}
-	for(int i=0;i<pw.NumPlanets();i++)
-		if(demora[i]==0)demora[i]=9990;			
+				
 	for (Fleet f : pw.EnemyFleets())
 	{
 		atacado[f.DestinationPlanet()]+=f.NumShips();
-		if(f.TurnsRemaining()<demora[f.DestinationPlanet()])
-			demora[f.DestinationPlanet()]=f.TurnsRemaining();
+		
 	}
 	for(Planet p : pw.MyPlanets())
 	{
@@ -60,22 +57,12 @@ public class MyBot {
 		Planet dest = null;//java suga :P
 		int losing = atacado[p.PlanetID()];
 		
-		if(losing>=score)//evita perder planetas
+		if(2*losing>=score)//evita perder planetas
 			continue;
 		score-=losing;//ataca com o que sobra, meio burro...
 		
 		Set<Integer> foi = new HashSet<Integer>();//java sugao
-		for(Planet q: pw.MyPlanets())//defesa
-		{
-			int tera = q.NumShips()+demora[q.PlanetID()]*q.GrowthRate();
-			if(atacado[q.PlanetID()]>tera && pw.Distance(p.PlanetID(),q.PlanetID())<demora[q.PlanetID()] && score>(atacado[q.PlanetID()]- tera))
-			{
-				int attack = atacado[q.PlanetID()] - tera;  
-				pw.IssueOrder(p, q,attack);
-				score-=attack;		
-				
-			}	
-		}
+		
 		for(int i=0;i<max_fleets;i++)
 		{
 			int attack = 0;
