@@ -22,8 +22,7 @@ public class MyBot {
     public static void DoTurn(PlanetWars pw) {
 	 
 	
-	//ArrayList<Integer> perde = new ArrayList<Integer> (pw.NumPlanets())//porra de java suga do caralho porra de array de "integer" vtnc .get, .set pqp sugacao grautuita,foda-se , vou declrar um array grandao que nao suga tanto..
-	//int [] perde= new int[pw.NumPlanets()];//tudo isso soh pra declarar um array...
+	//ArrayList<Integer> perde = new ArrayList<Integer> (pw.NumPlanets())
 	int max_fleets = 1;//por turno
 	int max_turns = 0;//mudar de acordo com a situcao
 	for(Planet p1 : pw.MyPlanets())
@@ -37,8 +36,13 @@ public class MyBot {
 	int[] ataca = new int [pw.NumPlanets()];
 	int[] atacado = new int [pw.NumPlanets()];
 	int[] demora = new int [pw.NumPlanets()];
+	double[][] distancia = new double[pw.NumPlanets()][2];
+	
 	for(int i=0;i<pw.NumPlanets();i++)
+	{
 		ataca[i]=atacado[i]=demora[i]=0;
+		distancia[i][0]=distancia[i][1]=0;
+	}
 	for (Fleet f : pw.MyFleets())
 	{
 		ataca[f.DestinationPlanet()]+=f.NumShips();
@@ -52,6 +56,24 @@ public class MyBot {
 		atacado[f.DestinationPlanet()]+=f.NumShips();
 		if(f.TurnsRemaining()<demora[f.DestinationPlanet()])
 			demora[f.DestinationPlanet()]=f.TurnsRemaining();
+	}
+	
+	for(Planet p: pw.Planets())
+	{
+		for(Planet q:pw.MyPlanets())
+			distancia[p.PlanetID()][0]+=pw.Distance(p.PlanetID(),q.PlanetID());
+		for(Planet q:pw.EnemyPlanets())
+			distancia[p.PlanetID()][1]+= pw.Distance(p.PlanetID(),q.PlanetID());
+		
+		if(pw.MyPlanets().size()>0)
+			distancia[p.PlanetID()][0]/=pw.MyPlanets().size();
+		else
+			distancia[p.PlanetID()][0]=1;
+			
+		if(pw.EnemyPlanets().size()>0)
+			distancia[p.PlanetID()][1]/=pw.EnemyPlanets().size();
+		else
+			distancia[p.PlanetID()][1]=9999999;
 	}
 	for(Planet p : pw.MyPlanets())
 	{
@@ -68,24 +90,27 @@ public class MyBot {
 		for(Planet q: pw.MyPlanets())//defesa
 		{
 			int tera = q.NumShips()+demora[q.PlanetID()]*q.GrowthRate();
-			if(atacado[q.PlanetID()]>tera && pw.Distance(p.PlanetID(),q.PlanetID())<demora[q.PlanetID()] && score>(atacado[q.PlanetID()]- tera))
+			if(atacado[q.PlanetID()]>tera && pw.Distance(p.PlanetID(),q.PlanetID())<demora[q.PlanetID()] && score>(atacado[q.PlanetID()] - tera))
 			{
 				int attack = atacado[q.PlanetID()] - tera;  
 				pw.IssueOrder(p, q,attack);
 				score-=attack;		
-				
+				atacado[q.PlanetID()] -= attack;
 			}	
 		}
+		
+		
+		
 		for(int i=0;i<max_fleets;i++)
 		{
 			int attack = 0;
-			int best = -1;
+			double best = -1;
 			for (Planet q : pw.NotMyPlanets()) 
 			{
 				if(foi.contains(q.PlanetID()))
 					continue;
 				int has_sent = ataca[q.PlanetID()];
-				int enemy_score=atacado[q.PlanetID()];
+				int enemy_score = atacado[q.PlanetID()];
 			
 					  		
 				enemy_score += (int)q.NumShips();
@@ -93,7 +118,7 @@ public class MyBot {
 		   		int turns = pw.Distance(p.PlanetID(),q.PlanetID());
 		   		if(turns>max_turns)
 		   			continue;
-				if(has_sent>0 )
+				if(has_sent>0)
 				{
 					
 					int dif = turns - demora[q.PlanetID()];
@@ -101,27 +126,32 @@ public class MyBot {
 						enemy_score+=demora[q.PlanetID()]*q.GrowthRate();
 					if(q.Owner()>1)
 						enemy_score+=(dif)*q.GrowthRate();
-		   			if(enemy_score>has_sent && enemy_score-has_sent<score)
+		   			if(enemy_score>has_sent && 2*(enemy_score-has_sent+1)<score)
 		   			{
 						best = 1;
-						attack=(1+enemy_score-has_sent);
+						attack=2*(1+enemy_score-has_sent);
 						dest = q;
-							
-						break;
+						foi.add(dest.PlanetID());	
+						i--;
+					   break;		
 					} 	
 					continue;
 							
 				}
+				
 		   		if(q.Owner()>1)//planeta do inimigo
 		  			enemy_score+=turns*q.GrowthRate();
 		  		
-		  		
 		   		 	
-		   		 int win = (max_turns-2*turns)*q.GrowthRate() - enemy_score;
+		   		 double win =  - enemy_score;
+				 win+=q.GrowthRate()*(max_turns-turns)*distancia[q.PlanetID()][1]/(2*distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);
+				 
 				 
 		   		 if(q.Owner()>1)
-		   		 	win+=enemy_score+(max_turns-turns)*q.GrowthRate();//inimigo perde
-
+		   		 {
+		   		 	win+=enemy_score;//inimigo perde
+				 	win+=q.GrowthRate()*(max_turns-turns)*distancia[q.PlanetID()][1]/(2*distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);//deixa de ganhar			 
+				 }
 				 if(score<=enemy_score-has_sent)
 					continue; 
 		   		 if(win>best)//tenta atacar onde mais ganha naves, sem atacar mais que o necessario
@@ -133,7 +163,7 @@ public class MyBot {
 		    	}
 			if(best>0 && attack>0)
 			{
-			    	 pw.IssueOrder(p, dest,attack);
+			     pw.IssueOrder(p, dest,attack);
 				 score-=attack;		
 				 foi.add(dest.PlanetID());	
 					
