@@ -144,13 +144,13 @@ public class MyBot {
 		  		
 		   		 	
 		   		 double win =  - enemy_score;
-				 win+=q.GrowthRate()*(max_turns-turns)*distancia[q.PlanetID()][1]/(2*distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);
+				 win+=q.GrowthRate()*(max_turns-turns)*distancia[q.PlanetID()][1]/(distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);
 				 
 				 
 		   		 if(q.Owner()>1)
 		   		 {
 		   		 	win+=enemy_score;//inimigo perde
-				 	win+=q.GrowthRate()*(max_turns-turns)*distancia[q.PlanetID()][1]/(2*distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);//deixa de ganhar			 
+				 	win+=q.GrowthRate()*(max_turns-turns)*distancia[q.PlanetID()][1]/(distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);//deixa de ganhar			 
 				 }
 				 if(score<=enemy_score-has_sent)
 					continue; 
