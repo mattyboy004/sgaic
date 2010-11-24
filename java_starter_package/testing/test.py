@@ -56,6 +56,7 @@ if __name__ == "__main__":
 			print outstr
 		status = outlines[-1].strip()
 		print status,
+		sys.stdout.flush()
 		with statistics_lock:
 			if 'Player 1' in status:
 				statistics['p1'] += 1
