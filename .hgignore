@@ -1,0 +1,4 @@
+syntax: glob
+*.class
+*.DS_Store
+*.pyc
