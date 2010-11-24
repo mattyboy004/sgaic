@@ -6,7 +6,7 @@ rm -f results
 for i in `seq $min $max`; do
 	echo 'Game number' $i '...'
 	echo 'Game number' $i '...' >> results
-	java -jar tools/PlayGame.jar maps/map$i.txt 1000 200 log.txt "java -cp . MyBot" "java -cp ./versao5 MyBot" 2>> results > /dev/null
+	java -jar tools/PlayGame.jar maps/map$i.txt 1000 200 log.txt "java -cp . MyBot" "java -cp ./versao6 MyBot" 2>> results > /dev/null
 	tail -1 results
 done;
 echo '- - - - - - - - - - - '
