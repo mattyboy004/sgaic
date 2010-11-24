@@ -40,17 +40,21 @@ if __name__ == "__main__":
 	print "Done."
 	print
 
-	games = [ GameParameters("maps/map%d.txt" % mapnumber) for mapnumber in range(1, 101) ]
+	games = [ GameParameters("../maps/map%d.txt" % mapnumber) for mapnumber in range(1, 101) ]
 	
 	statistics = {'draw': 0, 'p1': 0, 'p2': 0}
 	statistics_lock = threading.Lock()
 
 	def playgame(parameters):
-		cmdline = """java -jar ../tools/PlayGame.jar %s %d %d /dev/null "java -cp ../ MyBot" "java -cp ./adversary MyBot" """ % (parameters.mapfile, TIME_LIMIT, NUM_ROUNDS)
+		cmdline = """java -jar ../tools/PlayGame.jar %s %d %d ./log.txt "java -cp ../ MyBot" "java -cp ./adversary MyBot" """ % (parameters.mapfile, TIME_LIMIT, NUM_ROUNDS)
 		p = subprocess.Popen(shlex.split(cmdline), 
 		                     stdout=open('/dev/null', 'w'), 
 		                     stderr=subprocess.PIPE)
-		status = p.stderr.readlines()[-1].strip()
+		outlines = p.stderr.readlines()
+		outstr = ''.join(outlines)
+		if 'ERROR' in outstr:
+			print outstr
+		status = outlines[-1].strip()
 		print status,
 		with statistics_lock:
 			if 'Player 1' in status:
@@ -70,6 +74,7 @@ if __name__ == "__main__":
 	print "Cleaning...",
 	sys.stdout.flush()
 	os.system("rm -rf ./adversary/MyBot.*")
+	os.system("rm -rf ./log.txt")
 	print "Done."
 	print
 	
