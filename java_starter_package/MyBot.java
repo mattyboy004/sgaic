@@ -147,11 +147,18 @@ public class MyBot {
 					int eh_inimigo = 0;
 					if(q.Owner()>1)//inimigo
 					{
-						peso[0]=-1.0;peso[1]=0.5;peso[2]=0.7;peso[3]=0.4;eh_inimigo = 1;
+						peso[0]=-1.0;
+						peso[1]=0.8;
+						peso[2]=distancia[q.PlanetID()][1]/(distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);
+						peso[3]=0.8*distancia[q.PlanetID()][1]/(distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);
+						eh_inimigo = 1;
 					}
 					else
 					{
-						peso[0]=-1.0;peso[1]=0.0;peso[2]=0.9;peso[3]=0.0;
+						peso[0]=-1.0;
+						peso[1]=0.0;
+						peso[2]=distancia[q.PlanetID()][1]/(distancia[q.PlanetID()][0]+distancia[q.PlanetID()][1]);
+						peso[3]=0.0;
 					}
 				
 					int turns = pw.Distance(p.PlanetID(),q.PlanetID());
