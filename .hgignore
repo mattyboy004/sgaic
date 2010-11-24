@@ -1,0 +1,5 @@
+syntax: glob
+*.class
+*.DS_Store
+*.pyc
+java_starter_package/MyBot.zip
