@@ -3,3 +3,6 @@ syntax: glob
 *.DS_Store
 *.pyc
 java_starter_package/MyBot.zip
+java_starter_package/testing/adversary/MyBot.java
+java_starter_package/testing/log.txt
+
