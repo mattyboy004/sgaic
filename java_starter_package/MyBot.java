@@ -10,14 +10,19 @@ public class MyBot
 	static int[] demora = new int[MAX_NUM];
 	static double[][] distancia = new double[MAX_NUM][3];
 	static double lucro[] = new double[3];
+	static double total[] = new double[3];
+	
+	
 	static int max_turns;
+	static PlanetWars pw;
 	
 	static final int NEUTRO = 0;
 	static final int ME = 1;
 	static final int ENEMY = 2; 
 	static final int DEFAULT_DISTANCE[] = {0, 1, 99999};
 	
-	static PlanetWars pw;
+	static double treinados[][][] = new double[3][4][4];
+	
 	
 	public static boolean isEnemy(int enemy)
 	{
@@ -141,12 +146,29 @@ public class MyBot
 		
 	}
 	
+	//total de cada jogador
+	public static void calculateTotal()
+	{
+		total[ME]=total[ENEMY]=0.0;
+		
+		for(Planet p : pw.MyPlanets()) 
+			total[ME]+=p.NumShips();
+		for(Fleet f : pw.MyFleets())
+			total[ME]+=f.NumShips();
+			
+		for(Planet p : pw.EnemyPlanets())
+			total[ENEMY]+=p.NumShips();
+		for(Fleet f : pw.EnemyFleets())
+			total[ENEMY]+=f.NumShips();
+	}
+	
 	public static void setUpHeuristicParams()
 	{
 		calculateMaxTurns(); 
 		calculateFleets();
 		calculateDistance();
 		calculateIncome();
+		calculateTotal();
 	}
 
 	//quantos de p podem atacar sem perder p
@@ -166,24 +188,19 @@ public class MyBot
 	public static void setPeso(Planet q,double [] peso)
 	{
 		// peso pras naves que eu perco, peso pra tirar nave do inimigo,lucro estimado por turno, lucro tirado do inimigo
-			
-		peso[0] = -1.0;
-		if (isEnemy(q.Owner()))// inimigo
-		{	
-			peso[1] = lucro[ME]/(lucro[ME]+lucro[ENEMY]);
-			peso[2] = distancia[q.PlanetID()][ENEMY]
-					/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
-			peso[3] = 0.8 * distancia[q.PlanetID()][ENEMY]
-					/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
-		}
-		else//neutro
+		
+		for(int i=0;i<4;i++)
 		{
-			peso[1] = 0.0;
-			peso[2] = distancia[q.PlanetID()][ENEMY]
-				/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
-			peso[3] = 0.0;
-		}
-	
+			peso[i]=treinados[q.Owner()][i][0]
+					+
+					treinados[q.Owner()][i][1]*(distancia[q.PlanetID()][ENEMY]/(distancia[q.PlanetID()][ENEMY]+distancia[q.PlanetID()][ME]))
+					+
+					treinados[q.Owner()][i][2]*(lucro[ENEMY]/(lucro[ENEMY]+lucro[ME]))
+					+
+					treinados[q.Owner()][i][3]*(total[ENEMY]/(total[ENEMY]+total[ME]));
+					
+					
+		}	
 	}
 	
 	public static int calculateEndNumberOfShips(Planet q, int turns)
@@ -279,9 +296,22 @@ public class MyBot
 
 	}
 
+	public static void extractPesos(String[] args)
+	{
+		for(int i = 0; i < 4; i++)
+			for(int j = 0; j < 4; j++)
+			{
+				treinados[NEUTRO][i][j] = Double.valueOf(args[4*i + j]);
+				treinados[ENEMY][i][j] = Double.valueOf(args[16 + 4*i + j]);
+			}
+		
+	}
+
 	// nao mexer...
 	public static void main(String[] args)
 	{
+		extractPesos(args);
+		
 		String line = "";
 		String message = "";
 		int c;

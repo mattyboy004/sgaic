@@ -11,7 +11,7 @@ except NotImplementedError:
 	NUM_THREADS = 1
 TIME_LIMIT = 1000 # milliseconds
 NUM_ROUNDS = 200
-ADVERSARY_TAG = 'v7'
+ADVERSARY_TAG = 'v8'
 
 
 class GameParameters(object):
@@ -46,7 +46,10 @@ if __name__ == "__main__":
 	statistics_lock = threading.Lock()
 
 	def playgame(parameters):
-		cmdline = """java -jar ../tools/PlayGame.jar %s %d %d ./log.txt "java -cp ../ MyBot" "java -cp ./adversary MyBot" """ % (parameters.mapfile, TIME_LIMIT, NUM_ROUNDS)
+		cmdline = """java -jar ../tools/PlayGame.jar %s %d %d ./log.txt 
+			"java -cp ../ MyBot -1 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 -1 0 0 0 0.8 0 0 0 0 1 0 0 0 0.8 0 0" 
+			"java -cp ./adversary MyBot " 
+			""" % (parameters.mapfile, TIME_LIMIT, NUM_ROUNDS)
 		p = subprocess.Popen(shlex.split(cmdline), 
 		                     stdout=open('/dev/null', 'w'), 
 		                     stderr=subprocess.PIPE)
