@@ -1,3 +1,4 @@
+import java.util.List;
 
 public class MyBot
 {
@@ -7,10 +8,23 @@ public class MyBot
 	static int[][] ataca = new int[MAX_NUM][MAX_TURN];
 	static int[][] atacado = new int[MAX_NUM][MAX_TURN];
 	static int[] demora = new int[MAX_NUM];
-	static double[][] distancia = new double[MAX_NUM][2];
+	static double[][] distancia = new double[MAX_NUM][3];
 	static int max_turns;
+	
+	static final int NEUTRO = 0;
+	static final int ME = 1;
+	static final int ENEMY = 2; 
+	static final int DEFAULT_DISTANCE[] = {0, 1, 99999};
+	
+	static PlanetWars pw;
+	
+	public static boolean isEnemy(int enemy)
+	{
+		return enemy != ME && enemy != NEUTRO;
+	}
 
-	public static void calculateMaxTurns(PlanetWars pw)
+	// Poda! Determina qual o número de turnos o algoritmo vai prucurar
+	public static void calculateMaxTurns()
 	{
 		max_turns = 0;// mudar de acordo com a situcao
 		for (Planet p1 : pw.MyPlanets())
@@ -20,59 +34,63 @@ public class MyBot
 			max_turns /= (pw.MyPlanets().size() * pw.NotMyPlanets().size());
 		max_turns = 3 * max_turns / 2 + 10;
 	}
-	public static void calculateFleets(PlanetWars pw)
+	
+	// Contabiliza todas as naves de fleets que estão viajando e quem elas vão atacar
+	public static void checkTravelingShips(int who[][], List<Fleet> fleets)
+	{
+		for (Fleet f : fleets)
+		{
+			who[f.DestinationPlanet()][f.TurnsRemaining()] += f.NumShips();
+				if (f.TurnsRemaining() < demora[f.DestinationPlanet()])
+					demora[f.DestinationPlanet()] = f.TurnsRemaining();
+		}
+	}
+	
+	// Iniciar quem está sendo atacado e quem vai atacar em 0 e depois calcula usando ckeckTravelingShips
+	public static void calculateFleets()
 	{
 		for (int i = 0; i < pw.NumPlanets(); i++)
+		{
 			demora[i] = MAX_TURN;
-
-		for (int i = 0; i < pw.NumPlanets(); i++)
 			for (int j = 0; j < MAX_TURN; j++)
 				ataca[i][j] = atacado[i][j] = 0;
-
-		for (Fleet f : pw.MyFleets())
-		{
-			ataca[f.DestinationPlanet()][f.TurnsRemaining()] += f.NumShips();
-			if (f.TurnsRemaining() < demora[f.DestinationPlanet()])
-				demora[f.DestinationPlanet()] = f.TurnsRemaining();
 		}
-
-		for (Fleet f : pw.EnemyFleets())
-		{
-			atacado[f.DestinationPlanet()][f.TurnsRemaining()] += f.NumShips();
-			if (f.TurnsRemaining() < demora[f.DestinationPlanet()])
-				demora[f.DestinationPlanet()] = f.TurnsRemaining();
-		}
-
+		
+		checkTravelingShips(ataca, pw.MyFleets());
+		checkTravelingShips(atacado, pw.EnemyFleets());
 	}
-	public static void calculateDistance(PlanetWars pw)
-	{
 
+	// Calcula a média da distância de cada planeta ao planetas amigos e inimigos. Com isso avalia o quão
+	// protegido o planeta está e, consequentemente, o qual bizu ele é.
+	public static void calculateDistance()
+	{
 		for (int i = 0; i < pw.NumPlanets(); i++)
-			distancia[i][0] = distancia[i][1] = 0.0;
+			distancia[i][ME] = distancia[i][ENEMY] = 0.0;
 
 		for (Planet p : pw.Planets())
 		{
-			for (Planet q : pw.MyPlanets())
-				distancia[p.PlanetID()][0] += pw.Distance(p.PlanetID(), q.PlanetID());
-			for (Planet q : pw.EnemyPlanets())
-				distancia[p.PlanetID()][1] += pw.Distance(p.PlanetID(), q.PlanetID());
-
-			if (pw.MyPlanets().size() > 0)
-				distancia[p.PlanetID()][0] /= pw.MyPlanets().size();
-			else
-				distancia[p.PlanetID()][0] = 1;
-
-			if (pw.EnemyPlanets().size() > 0)
-				distancia[p.PlanetID()][1] /= pw.EnemyPlanets().size();
-			else
-				distancia[p.PlanetID()][1] = 9999999;
+			calculateDistanceOfFrom(p, pw.MyPlanets(), ME);
+			calculateDistanceOfFrom(p, pw.EnemyPlanets(), ENEMY);	
 		}
-
+	}
+	
+	// Função auxiliar de calculateDistance. Faz o cáclculo para cada planeta, dado se está avaliando o meu planeta 
+	// ou inimigo
+	public static void calculateDistanceOfFrom(Planet p, List<Planet> planets, int index)
+	{
+		for (Planet q : planets)
+			distancia[p.PlanetID()][index] += pw.Distance(p.PlanetID(), q.PlanetID());
+		if (planets.size() > 0)
+			distancia[p.PlanetID()][index] /= planets.size();
+		else
+			distancia[p.PlanetID()][index] = DEFAULT_DISTANCE[index];
 	}
 
+	//TODO melhorar esse método
+	//Está meio antintuitivo. Escolhe o planeta a ser defendido por p em ordem numérica. 
+	//Idéia de melhoria: Dar p o planeta a ser protegido e procurar um planeta bizu para defendê-lo
 	public static int defend(Planet p, PlanetWars pw, int score)
 	{
-
 		for (Planet q : pw.MyPlanets())// defesa
 		{
 			int tera = q.NumShips();
@@ -95,149 +113,161 @@ public class MyBot
 		return score;
 	}
 
-	public static double calculateExpectedWin(Planet q, int turns, double enemy_score)
+	// Não usado por enquanto (era usado antes). Calcula "pontos heurísticos" ganhos em se atacar um planeta
+	public static double expectedWin(Planet q, int turns, double peso[])
 	{
-		double win = q.GrowthRate() * (max_turns - turns) * distancia[q.PlanetID()][1]
-				/ (distancia[q.PlanetID()][0] + distancia[q.PlanetID()][1]);// lucro
-		if (q.Owner() > 1)
+		int tem = 1;
+		double win = 0;
+		for (int j = turns + 1; j <= max_turns; j++)
 		{
-			win += enemy_score;// inimigo perde
-			win += q.GrowthRate() * (max_turns - turns) * distancia[q.PlanetID()][1]
-					/ (distancia[q.PlanetID()][0] + distancia[q.PlanetID()][1]);// inimigo
-																				// deixa
-																				// de
-																				// ganhar
+			win += (peso[2] + peso[3]) * q.GrowthRate();
+			tem += q.GrowthRate() + ataca[q.PlanetID()][j]
+					- atacado[q.PlanetID()][j];
+			if (tem < 0)
+				break;
 		}
-		return win - enemy_score;
+		return win;
 	}
 
+	// TODO
 	public static int calculateExpectedEnemyScore(Planet q, int turns)
 	{
-		// TODO
 		return 0;
 	}
-
-	public static void DoTurn(PlanetWars pw)
+	
+	public static void setUpHeuristicParams()
 	{
+		calculateMaxTurns(); 
+		calculateFleets();
+		calculateDistance();
+	}
 
-		int max_fleets = 1;// por turno
-
-		calculateMaxTurns(pw);
-		calculateFleets(pw);// acha frotas
-		calculateDistance(pw);// acha distancia carteada para a heuristica
-
-		for (Planet p : pw.MyPlanets())
+	//quantos de p podem atacar sem perder p
+	public static int calculateFleetsToAttack(Planet p)
+	{
+		int tem = p.NumShips();
+		int score = tem;
+		for (int i = 1; i < max_turns; i++)
 		{
-			int tem = p.NumShips();
-			int score = tem;
-			Planet dest = null;
-
-			for (int i = 1; i < max_turns; i++)
+			tem = tem + p.GrowthRate() - atacado[p.PlanetID()][i] + ataca[p.PlanetID()][i];
+			if (tem < score)
+				score = tem;
+		}
+		return score;
+	}
+	
+	public static void setPeso(Planet q,double [] peso)
+	{
+		// peso pras naves que eu perco, peso pra tirar nave do inimigo,lucro estimado por turno, lucro tirado do inimigo
+			
+		if (isEnemy(q.Owner()))// inimigo
+		{
+			peso[0] = -1.0;
+			peso[1] = 0.8;
+			peso[2] = distancia[q.PlanetID()][ENEMY]
+					/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
+			peso[3] = 0.8 * distancia[q.PlanetID()][ENEMY]
+					/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
+		}
+		else
+		{
+			peso[0] = -1.0;
+			peso[1] = 0.0;
+			peso[2] = distancia[q.PlanetID()][ENEMY]
+					/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
+			peso[3] = 0.0;
+		}
+	
+	}
+	
+	public static int calculateEndNumberOfShips(Planet q, int turns)
+	{
+		boolean eh_inimigo = isEnemy(q.Owner());
+		int enemy_score = q.NumShips();
+		for (int j = 1; j <= turns; j++)
+		{
+			if (!eh_inimigo)
 			{
-				tem = tem + p.GrowthRate() - atacado[p.PlanetID()][i] + ataca[p.PlanetID()][i];
-				if (tem < score)
-					score = tem;
+				int tira = Math.max(atacado[q.PlanetID()][j], ataca[q.PlanetID()][j]);
+				enemy_score = enemy_score - tira;
+				if (enemy_score < 0)
+				{
+					if (atacado[q.PlanetID()][j] > ataca[q.PlanetID()][j])
+					{
+						eh_inimigo = true;
+						enemy_score = -enemy_score;
+					}
+					else if (atacado[q.PlanetID()][j] < ataca[q.PlanetID()][j])
+					{
+						enemy_score = -1;
+						break;
+					}
+					else
+						enemy_score = 0;
+				}
+			}
+			else
+				enemy_score = enemy_score + q.GrowthRate() + atacado[q.PlanetID()][j]
+						- ataca[q.PlanetID()][j];
+
+		}
+		return enemy_score;
+	}
+	
+	public static int[] findMaxPointsPlanet(Planet p, int score)
+	{
+		double[] peso = new double[5];
+		double best = -1;
+		int ans[] = new int[2];
+		ans[0] = 0;
+		for (Planet q : pw.NotMyPlanets())
+		{
+			setPeso(q,peso);
+
+			int turns = pw.Distance(p.PlanetID(), q.PlanetID());
+			
+			if (turns > max_turns)// nao ataca se demorar muito...
+				continue;
+
+			int enemy_score = calculateEndNumberOfShips(q, turns);
+			if (enemy_score < 0 || enemy_score + 1 >= score)
+				continue;
+				
+			double win = (peso[0] + peso[1]) * enemy_score + expectedWin(q, turns, peso);
+			if (win > best)
+			{
+				best = win;
+				ans[1] = q.PlanetID();
+				ans[0] = enemy_score + 1;
 			}
 
-			if (score <= 0)// faz nada
+		}
+		return ans;
+	}
+	
+	public static void DoTurn(PlanetWars pw)
+	{
+		MyBot.pw = pw;
+		setUpHeuristicParams();
+		
+		int max_fleets = 1; // máximo de fleets de ataque que cada planeta pode lançar em um turno
+		
+		for (Planet p : pw.MyPlanets())
+		{
+			int score = calculateFleetsToAttack(p); 
+			if (score <= 0)// faz nada, senao perde o planeta
 				continue;
 			score = defend(p, pw, score);// tenta defender
 
 			for (int i = 0; i < max_fleets; i++)
 			{
-				int attack = 0;
-				double best = -1;
-				double[] peso = new double[5];// peso pros que eu perco, tirar
-												// do inimigo,lucro, lucro
-												// tirado do inimigo,lucro do
-												// planeta
-				for (Planet q : pw.NotMyPlanets())
+				int attack[] = findMaxPointsPlanet(p, score);
+				if (attack[0] > 0)
 				{
-					int win = 0;
-					int eh_inimigo = 0;
-					if (q.Owner() > 1)// inimigo
-					{
-						peso[0] = -1.0;
-						peso[1] = 0.8;
-						peso[2] = distancia[q.PlanetID()][1]
-								/ (distancia[q.PlanetID()][0] + distancia[q.PlanetID()][1]);
-						peso[3] = 0.8 * distancia[q.PlanetID()][1]
-								/ (distancia[q.PlanetID()][0] + distancia[q.PlanetID()][1]);
-						eh_inimigo = 1;
-					}
-					else
-					{
-						peso[0] = -1.0;
-						peso[1] = 0.0;
-						peso[2] = distancia[q.PlanetID()][1]
-								/ (distancia[q.PlanetID()][0] + distancia[q.PlanetID()][1]);
-						peso[3] = 0.0;
-					}
-
-					int turns = pw.Distance(p.PlanetID(), q.PlanetID());
-					if (turns > max_turns)// nao ataca se demorar muito...
-						continue;
-
-					int enemy_score = q.NumShips();
-
-					for (int j = 1; j <= turns; j++)
-					{
-						if (eh_inimigo == 0)
-						{
-							int tira = Math.max(atacado[q.PlanetID()][j], ataca[q.PlanetID()][j]);
-							enemy_score = enemy_score - tira;
-							if (enemy_score < 0)
-							{
-								if (atacado[q.PlanetID()][j] > ataca[q.PlanetID()][j])
-								{
-									eh_inimigo = 1;
-									enemy_score = -enemy_score;
-								}
-								else if (atacado[q.PlanetID()][j] < ataca[q.PlanetID()][j])
-								{
-									enemy_score = -1;
-									break;
-								}
-								else
-									enemy_score = 0;
-							}
-						}
-						else
-							enemy_score = enemy_score + q.GrowthRate() + atacado[q.PlanetID()][j]
-									- ataca[q.PlanetID()][j];
-
-					}
-
-					if (enemy_score < 0 || enemy_score + 1 >= score)
-						continue;
-
-					int tmp = enemy_score + 1;
-					win += (peso[0] + peso[1]) * enemy_score;
-					tem = 1;// meeeu
-
-					for (int j = turns + 1; j <= max_turns; j++)
-					{
-						win += (peso[2] + peso[3]) * q.GrowthRate();
-						tem = tem + q.GrowthRate() + ataca[q.PlanetID()][j]
-								- atacado[q.PlanetID()][j];
-						if (tem < 0)
-							break;
-					}
-					if (win > best)
-					{
-						best = win;
-						dest = q;
-						attack = tmp;
-					}
-
-				}
-
-				if (best > 0 && attack > 0)
-				{
-					ataca[dest.PlanetID()][pw.Distance(p.PlanetID(), dest.PlanetID())] += attack;
-					pw.IssueOrder(p, dest, attack);
-					score -= attack;
-
+					Planet dest = new Planet(attack[1],0,0,0,0.0,0.0);
+					ataca[dest.PlanetID()][pw.Distance(p.PlanetID(), dest.PlanetID())] += attack[0];
+					pw.IssueOrder(p, dest, attack[0]);
+					score -= attack[0];
 				}
 			}
 		}
@@ -283,4 +313,3 @@ public class MyBot
 		}
 	}
 }
-
