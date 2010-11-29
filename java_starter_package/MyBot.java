@@ -9,6 +9,7 @@ public class MyBot
 	static int[][] atacado = new int[MAX_NUM][MAX_TURN];
 	static int[] demora = new int[MAX_NUM];
 	static double[][] distancia = new double[MAX_NUM][3];
+	static double lucro[] = new double[3];
 	static int max_turns;
 	
 	static final int NEUTRO = 0;
@@ -129,10 +130,15 @@ public class MyBot
 		return win;
 	}
 
-	// TODO
-	public static int calculateExpectedEnemyScore(Planet q, int turns)
+	//Income de cada jogador
+	public static void calculateIncome()
 	{
-		return 0;
+		lucro[ME]=lucro[ENEMY]=0.0;
+		for(Planet p : pw.MyPlanets())
+			lucro[ME]+=p.GrowthRate();
+		for(Planet p : pw.EnemyPlanets())
+			lucro[ENEMY]+=p.GrowthRate();
+		
 	}
 	
 	public static void setUpHeuristicParams()
@@ -140,6 +146,7 @@ public class MyBot
 		calculateMaxTurns(); 
 		calculateFleets();
 		calculateDistance();
+		calculateIncome();
 	}
 
 	//quantos de p podem atacar sem perder p
@@ -160,21 +167,20 @@ public class MyBot
 	{
 		// peso pras naves que eu perco, peso pra tirar nave do inimigo,lucro estimado por turno, lucro tirado do inimigo
 			
+		peso[0] = -1.0;
 		if (isEnemy(q.Owner()))// inimigo
-		{
-			peso[0] = -1.0;
-			peso[1] = 0.8;
+		{	
+			peso[1] = lucro[ME]/(lucro[ME]+lucro[ENEMY]);
 			peso[2] = distancia[q.PlanetID()][ENEMY]
 					/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
 			peso[3] = 0.8 * distancia[q.PlanetID()][ENEMY]
 					/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
 		}
-		else
+		else//neutro
 		{
-			peso[0] = -1.0;
 			peso[1] = 0.0;
 			peso[2] = distancia[q.PlanetID()][ENEMY]
-					/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
+				/ (distancia[q.PlanetID()][ME] + distancia[q.PlanetID()][ENEMY]);
 			peso[3] = 0.0;
 		}
 	
@@ -207,8 +213,7 @@ public class MyBot
 				}
 			}
 			else
-				enemy_score = enemy_score + q.GrowthRate() + atacado[q.PlanetID()][j]
-						- ataca[q.PlanetID()][j];
+				enemy_score = enemy_score + q.GrowthRate() + atacado[q.PlanetID()][j] - ataca[q.PlanetID()][j];
 
 		}
 		return enemy_score;
