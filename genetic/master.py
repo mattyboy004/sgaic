@@ -14,7 +14,7 @@ SURVIVORS = 15
 TOURNAMENT_SIZE = 6
 NPARAMS = 32
 ALPHA = 0.03
-winners = []
+wins = []
 
 
 def main():
@@ -36,6 +36,9 @@ def natural_selection(pop):
 
 def make_tournament(players):
 	N = len(players)
+	global wins 
+	wins = [0]*N
+	
 	games = []
 	for i in range(N):
 		for j in range(i + 1, N):
@@ -50,22 +53,17 @@ def make_tournament(players):
 				pass
 	for game in games:
 		game.join()
-	best = get_champ()
-	#zerar winners
-	return best
+	return players[get_champ()]
 
 
 def get_champ():
-	# achar quem é o melhor usando o array winners
-	return []
+	return wins.index(max(wins))
 
 
 def make_game(comp, port, i, j):
-	# complementar método
-	print comp, port, i, j
 	# info = urllib2.urlopen('http://' + comp + ':' + port + '/execute?' + 
 	#					params(player[i],0) + params(player[j],NPARAMS))
-	# colocar informação de vitória no winner
+	# wins[i], win[j] = wini, winj
 	DB.release(comp, port)
 
 def params(player, init):
