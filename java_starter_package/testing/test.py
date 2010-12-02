@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, subprocess, shlex, threading, multiprocessing, simplejson
+import os, sys, subprocess, shlex, threading, multiprocessing, simplejson, random
 from threadpool import *
 
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 	print >> sys.stderr, "Done."
 	print >> sys.stderr
 
-	games = [ GameParameters("../maps/map%d.txt" % mapnumber) for mapnumber in range(1, 101) ]
+	games = random.sample([ GameParameters("../maps/map%d.txt" % mapnumber) for mapnumber in range(1, 101) ], 1)
 	
 	statistics = {'draw': 0, 'p1': 0, 'p2': 0}
 	statistics_lock = threading.Lock()
