@@ -41,7 +41,7 @@ def make_tournament(rawplayers):
 	[ match_queue.put(match) for match in matches ]
 	
 	def worker():
-		print >> sys.stderr, "Starting worker"
+		# print >> sys.stderr, "Starting worker"
 		db = DB.connect()
 		try:
 			while True:
@@ -50,7 +50,7 @@ def make_tournament(rawplayers):
 				except:
 					break
 				
-				print >> sys.stderr, "Got task"
+				# print >> sys.stderr, "Got task"
 				
 				while True:
 					cur = db.cursor()
@@ -60,7 +60,7 @@ def make_tournament(rawplayers):
 						try:
 							host, port = cur.next()
 						except:
-							print >> sys.stderr, "No clients found, sleeping a little bit..."
+							# print >> sys.stderr, "No clients found, sleeping a little bit..."
 							db.commit()
 							time.sleep(0.5)
 							continue
@@ -77,12 +77,13 @@ def make_tournament(rawplayers):
 							match_queue.task_done()
 						except:
 							print >> sys.stderr, "Game failed. Retrying..."
+							time.sleep(0.5)
 							continue
 						finally:
 							cur.execute('update comps set in_use = 0 where host = ? and port = ?', (host, port))
 							db.commit()
 					
-						print >> sys.stderr, "Game ok."
+						# print >> sys.stderr, "Game ok."
 						break
 					finally:
 						cur.close()
