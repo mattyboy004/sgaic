@@ -162,5 +162,5 @@ def get_random_param():
 	return 4*random.random() - 2
 
 if __name__ == '__main__':
-	daemonize(stdin='/dev/null', stdout='./log/stdout-log.txt', stderr='./log/stderr-log.txt')
+	daemonize(stdin='/dev/null', stdout='./log/stdout-master-log.txt', stderr='./log/stderr-master-log.txt')
 	main()
