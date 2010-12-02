@@ -4,10 +4,6 @@ import os, sys, subprocess, shlex, threading, multiprocessing, simplejson, rando
 from threadpool import *
 
 
-try:
-	NUM_THREADS = max(multiprocessing.cpu_count() / 2, 1)
-except NotImplementedError:
-	NUM_THREADS = 1
 TIME_LIMIT = 1000 # milliseconds
 NUM_ROUNDS = 200
 
@@ -18,10 +14,6 @@ class GameParameters(object):
 	
 
 if __name__ == "__main__":
-	try: print >> sys.stderr, "Available CPUs:", multiprocessing.cpu_count()
-	except NotImplementedError: pass
-	print >> sys.stderr, "Number of simultaneous threads:", NUM_THREADS
-	print >> sys.stderr
 	
 	print >> sys.stderr, "Cleaning...",
 	os.system("rm -rf ./log.txt")
@@ -38,7 +30,9 @@ if __name__ == "__main__":
 	statistics = {'draw': 0, 'p1': 0, 'p2': 0}
 	statistics_lock = threading.Lock()
 
-	def playgame(parameters):
+	print >> sys.stderr, 'Playing...'
+
+	for parameters in games:
 		cmdline = """java -jar ../tools/PlayGame.jar %s %d %d ./log.txt 
 			"java -cp .. MyBot %s" 
 			"java -cp .. MyBot %s" 
@@ -62,13 +56,6 @@ if __name__ == "__main__":
 			else:
 				statistics['draw'] += 1
 		
-	print >> sys.stderr, 'Playing...'
-	pool = ThreadPool(NUM_THREADS)
-	[ pool.putRequest(request) for request in makeRequests(playgame, games) ]	
-	pool.wait()
-	print >> sys.stderr
-	print >> sys.stderr
-	
 	print >> sys.stderr, '|        Statistics         |'
 	print >> sys.stderr, '| Wins |  P1  |  P2  | Draw |'
 	print >> sys.stderr, '|      | %4d | %4d | %4d |' % (statistics['p1'], statistics['p2'], statistics['draw'])
