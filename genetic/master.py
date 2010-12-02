@@ -42,7 +42,7 @@ def natural_selection(pop):
 	dispatch_matches(total_matches)
 	
 	for tournament in tournaments:
-		players = reversed(sorted(tournament['players'], lambda x: x['wins']))
+		players = reversed(sorted(tournament['players'], key=lambda x: x['wins']))
 		for player in players:
 			if random.random() < SELECTION_PRESSURE:
 				best.append(player['data'])
