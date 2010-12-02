@@ -43,47 +43,51 @@ def make_tournament(rawplayers):
 	def worker():
 		print >> sys.stderr, "Starting worker"
 		db = DB.connect()
-		while True:
-			try:
-				match = match_queue.get()
-			except:
-				db.close()
-				break
-				
-			print >> sys.stderr, "Got task"
-				
+		try:
 			while True:
-				cur = db.cursor()
-				cur.execute('select host, port from comps where in_use = 0 order by random() limit 1')
-
 				try:
-					host, port = cur.next()
+					match = match_queue.get()
 				except:
-					print >> sys.stderr, "No clients found, sleeping a little bit..."
-					db.commit()
-					time.sleep(0.5)
-					continue
-					
-				cur.execute('update comps set in_use = 1 where host = ? and port = ?', (host, port))
-				db.commit()
+					break
+				
+				print >> sys.stderr, "Got task"
+				
+				while True:
+					cur = db.cursor()
+					try:
+						cur.execute('select host, port from comps where in_use = 0 order by random() limit 1')
 
-				try:
-					stats = simplejson.loads(urllib2.urlopen('http://%s:%s/execute?%s' % (host, port, params(match[0]['data'] + match[1]['data']))).read())
-					with match[0]['lock']:
-						match[0]['wins'] += stats['p1']
-					with match[1]['lock']:
-						match[1]['wins'] += stats['p2']
-					match_queue.task_done()
-				except:
-					print >> sys.stderr, "Game failed. Retrying..."
-					continue
-				finally:
-					cur.execute('update comps set in_use = 0 where host = ? and port = ?', (host, port))
-					db.commit()
+						try:
+							host, port = cur.next()
+						except:
+							print >> sys.stderr, "No clients found, sleeping a little bit..."
+							db.commit()
+							time.sleep(0.5)
+							continue
 					
-				print >> sys.stderr, "Game ok."
-				cur.close()
-				break
+						cur.execute('update comps set in_use = 1 where host = ? and port = ?', (host, port))
+						db.commit()
+
+						try:
+							stats = simplejson.loads(urllib2.urlopen('http://%s:%s/execute?%s' % (host, port, params(match[0]['data'] + match[1]['data']))).read())
+							with match[0]['lock']:
+								match[0]['wins'] += stats['p1']
+							with match[1]['lock']:
+								match[1]['wins'] += stats['p2']
+							match_queue.task_done()
+						except:
+							print >> sys.stderr, "Game failed. Retrying..."
+							continue
+						finally:
+							cur.execute('update comps set in_use = 0 where host = ? and port = ?', (host, port))
+							db.commit()
+					
+						print >> sys.stderr, "Game ok."
+						break
+					finally:
+						cur.close()
+		finally:
+			db.close()
 	
 	for i in range(10):
 		t = Thread(target=worker)

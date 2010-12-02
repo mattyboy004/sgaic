@@ -36,28 +36,5 @@ def random_pop(pop_size, nparam):
 	return pop
 
 
-def find_available():
-	cur = db.cursor()
-	while True:
-		cur.execute('select host, port from comps where in_use = 0 limit 1')
-		try:
-			host, port = cur.next()
-		except StopIteration:
-			continue
-		break
-	cur.close()
-	return host, port
-
-
-def lock(comp, port):
-	with db:
-		db.execute('update comps set in_use = 1 where host = ? and port = ?', (comp, port))
-				
-			
-def release(comp, port):
-	with db:
-		db.execute('update comps set in_use = 0 where host = ? and port = ?', (comp, port))
-
-
 def connect():
 	return sqlite3.connect('./comps.db')
