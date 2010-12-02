@@ -4,14 +4,12 @@ import os, sys, subprocess, shlex, threading, multiprocessing, simplejson, rando
 from threadpool import *
 
 
-# NUM_THREADS = 1   # must equal to half available cores
 try:
 	NUM_THREADS = max(multiprocessing.cpu_count() / 2, 1)
 except NotImplementedError:
 	NUM_THREADS = 1
 TIME_LIMIT = 1000 # milliseconds
 NUM_ROUNDS = 200
-ADVERSARY_TAG = 'v8'
 
 
 class GameParameters(object):
@@ -26,21 +24,12 @@ if __name__ == "__main__":
 	print >> sys.stderr
 	
 	print >> sys.stderr, "Cleaning...",
-	os.system("rm -rf ./adversary/MyBot.*")
 	os.system("rm -rf ./log.txt")
 	print >> sys.stderr, "Done."
 	print >> sys.stderr
 	
-	print >> sys.stderr, "Loading adversary from repository...",
-	os.system("hg archive -r %s -I ../MyBot.java ." % ADVERSARY_TAG)
-	os.system("rm -rf ./adversary/MyBot.*")
-	os.system("mv -f ./java_starter_package/MyBot.java adversary/")
-	os.system("rm -rf ./java_starter_package ./.hg_archival.txt")
-	print >> sys.stderr, "Done."
-	
 	print >> sys.stderr, "Compiling...",
-	os.system("javac ../*.java")
-	os.system("javac ./adversary/*.java")
+	subprocess.call('make', cwd='..', stdout=open('/dev/null', 'w'), stderr=open('/dev/null', 'w'))
 	print >> sys.stderr, "Done."
 	print >> sys.stderr
 
@@ -51,8 +40,8 @@ if __name__ == "__main__":
 
 	def playgame(parameters):
 		cmdline = """java -jar ../tools/PlayGame.jar %s %d %d ./log.txt 
-			"java -cp ../ MyBot %s" 
-			"java -cp ./adversary MyBot %s" 
+			"java -cp .. MyBot %s" 
+			"java -cp .. MyBot %s" 
 			""" % (parameters.mapfile, TIME_LIMIT, NUM_ROUNDS, ' '.join(sys.argv[1:33]), ' '.join(sys.argv[33:]))
 		p = subprocess.Popen(shlex.split(cmdline), 
 		                     stdout=open('/dev/null', 'w'), 
@@ -76,7 +65,7 @@ if __name__ == "__main__":
 	print >> sys.stderr, 'Playing...'
 	pool = ThreadPool(NUM_THREADS)
 	[ pool.putRequest(request) for request in makeRequests(playgame, games) ]	
-	pool.wait();
+	pool.wait()
 	print >> sys.stderr
 	print >> sys.stderr
 	
