@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time, subprocess, simplejson, shlex, urllib2, random, DB, threading, Queue
+import time, subprocess, simplejson, shlex, urllib2, random, DB, threading, Queue, socket, sockutils
 from bottle import *
 from daemonize import daemonize
 from threading import Thread
@@ -14,6 +14,7 @@ SURVIVORS = 15
 TOURNAMENT_SIZE = 6
 NPARAMS = 32
 ALPHA = 0.03
+SELECTION_PRESSURE = 0.7 # p for tournament selection
 
 # comps_in_use = set()
 # comps_in_use_lock = threading.Lock()
@@ -41,72 +42,60 @@ def make_tournament(rawplayers):
 	players = [ {'data': player, 'wins': 0, 'lock': threading.Lock()} for player in rawplayers ]
 	matches = [ (players[i], players[j]) for i in range(len(players)) for j in range(len(players)) if j > i ]
 
-	match_queue = Queue.Queue()
-	[ match_queue.put(match) for match in matches ]
+	# initial queue
+	outstanding_queue = Queue.Queue()
+	[ outstanding_queue.put(match) for match in matches ]
 	
-	def worker():
-		# print >> sys.stderr, "Starting worker"
-		db = DB.connect()
+	# setting up listening socket
+	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	server_socket.bind(('0.0.0.0', int(sys.argv[1])))
+	server_socket.listen(5)
+	
+	# worker target
+	def worker(sock_info, match, outstanding_queue):
+		client_sock, (client_host, client_port) = sock_info
+	
+		print >> sys.stderr, "Dispatching game to (%s, %s)" % (client_host, client_port)
+		print >> sys.stderr, match
+		
 		try:
-			while True:
-				try:
-					match = match_queue.get()
-				except:
-					break
+			client_sock.sendall(pickle.dumps({'p1': match[0]['data'], 'p2': match[1]['data']}, 2))
+			client_sock.shutdown(socket.SHUT_WR) # done sending, will only receive now
+			match_result = pickle.loads(sockutils.recvall(client_sock))
+			if 'error' in match_result:
+				raise RuntimeError('Client-side game error.')
+		except Exception as ex:
+			print >> sys.stderr, "Game failed. (%s, %s). Exc.: (%s, %s)" % (client_host, client_port, type(ex), ex.args)
+			outstanding_queue.put(match)
+		else:
+			print >> sys.stderr, "Game ok. (%s, %s)" % (client_host, client_port)
+			with match[0]['lock']:
+				match[0]['wins'] += match_result['p1']
+			with match[1]['lock']:
+				match[1]['wins'] += match_result['p2']
 				
-				# print >> sys.stderr, "Got task"
-				
-				while True:
-					cur = db.cursor()
-					try:
-						cur.execute('select host, port from comps where in_use = 0')
-						hosts = cur.fetchall()
-						# hosts = [ host for host in cur.fetchall()
+	# outstanding_queue stores initial and failed games.
+	# current_queue stores the currently processed queue.
+	while not outstanding_queue.empty():
+		current_queue = outstanding_queue
+		outstanding_queue = Queue.Queue()
+		threads = []
+		
+		while not current_queue.empty():
+			sock_info = server_socket.accept()
+			match = current_queue.get()
+			thr = Thread(target=worker, args=(sock_info, match, outstanding_queue))
+			threads.append(thr) 
+			thr.start()
+		
+		[ thr.join() for thr in threads ]
 
-						try:
-							host, port = random.choice(hosts)
-							# print >> sys.stderr, host, port
-						except:
-							# print >> sys.stderr, "No clients found, sleeping a little bit..."
-							db.commit()
-							time.sleep(0.5)
-							continue
-					
-						cur.execute('update comps set in_use = 1 where host = ? and port = ?', (host, port))
-						db.commit()
-
-						try:
-							urllib2.urlopen('http://%s:%s/ping' % (host, port), timeout=.5).read()
-							stats = simplejson.loads(urllib2.urlopen('http://%s:%s/execute?%s' % (host, port, params(match[0]['data'] + match[1]['data']))).read())
-							with match[0]['lock']:
-								match[0]['wins'] += stats['p1']
-							with match[1]['lock']:
-								match[1]['wins'] += stats['p2']
-							match_queue.task_done()
-						except:
-							# print >> sys.stderr, "Game failed. Retrying..."
-							time.sleep(0.5)
-							continue
-						finally:
-							cur.execute('update comps set in_use = 0 where host = ? and port = ?', (host, port))
-							db.commit()
-					
-						print >> sys.stderr, "Game ok, host=%s, port=%s" % (host, port)
-						break
-					finally:
-						cur.close()
-		finally:
-			db.close()
+	players.sort(key=lambda v: -v['wins'])
 	
-	for i in range(10):
-		t = Thread(target=worker)
-		t.daemon = True
-		t.start()
-	
-	match_queue.join()
-	
-	max_wins = max([ player['wins'] for player in players ])
-	return [ player['data'] for player in players if player['wins'] == max_wins ][0]
+	for player in players:
+		if random.random() < SELECTION_PRESSURE:
+			return player['data']
+	return players[-1]['data']
 
 
 def get_champ(wins):
