@@ -60,12 +60,12 @@ def get_champ(wins):
 
 
 def make_game(comp, port, i, j, pi, pj, wins, winslock):
-	with urllib2.urlopen('http://%s:%s/execute?%s&%s' % (comp, port, params(pi, 0), params(pj, NPARAMS))) as f:
-		stats = simplejson.loads(f.read())
-		with winslock:
-			wins[i] += stats['p1']
-			wins[j] += stats['p2']
-		DB.release(comp, port)
+	stats = simplejson.loads(urllib2.urlopen('http://%s:%s/execute?%s&%s' % (comp, port, params(pi, 0), params(pj, NPARAMS)))\
+	                         .read())
+	with winslock:
+		wins[i] += stats['p1']
+		wins[j] += stats['p2']
+	DB.release(comp, port)
 
 
 def params(player, init):
