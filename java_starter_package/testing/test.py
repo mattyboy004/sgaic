@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os, sys, subprocess, shlex, threading, multiprocessing, simplejson, random
-from threadpool import *
 
 
 TIME_LIMIT = 1000 # milliseconds
