@@ -22,6 +22,6 @@ def execute():
 
 
 if __name__ == '__main__':
-	daemonize.daemonize(stdin='/dev/null', stdout='./log/stdout-%s-log.txt'%sys.argv[1], stderr='./log/stderr-%s-log.txt'%sys.argv[1])
+	# daemonize.daemonize(stdin='/dev/null', stdout='./log/stdout-%s-log.txt'%sys.argv[1], stderr='./log/stderr-%s-log.txt'%sys.argv[1])
 	run(host='0.0.0.0',
 	    port=int(sys.argv[1]))
