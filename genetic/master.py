@@ -41,15 +41,16 @@ def make_tournament(players):
 	games = []
 	for i in range(N):
 		for j in range(i + 1, N):
-			comp, port = DB.find_available()
-			DB.lock(comp, port)
-			try: 
-				game = Thread(target = make_game, args = (comp, port, i, j, players[i], players[j], wins, winslock))
-				game.start()
-				games.append(game)
-			except:
-				# o que fazer se um jogo der pau?
-				pass
+			while True:
+				comp, port = DB.find_available()
+				DB.lock(comp, port)
+				try: 
+					game = Thread(target = make_game, args = (comp, port, i, j, players[i], players[j], wins, winslock))
+					game.start()
+					games.append(game)
+					break
+				except:
+					continue
 	for game in games:
 		game.join()
 	return players[get_champ(wins)]
