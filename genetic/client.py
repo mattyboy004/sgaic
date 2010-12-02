@@ -14,6 +14,7 @@ def execute():
 	                     cwd='../java_starter_package/testing/',
 	                     stdout=subprocess.PIPE)
 	out = ' '.join([ x.strip() for x in p.stdout.readlines() ])
+	print >> sys.stderr, out
 	if 'ERROR' in out:
 		return {'error': out}
 	else:
