@@ -7,6 +7,11 @@ from bottle import *
 debug(True)	
 
 
+@route('/ping')
+def ping():
+	return 'PONG'
+
+
 @route('/execute')
 def execute():
 	parameters = ' '.join([ request.GET.get(x) for x in map(str, range(64)) ])
