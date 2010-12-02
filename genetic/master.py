@@ -15,6 +15,9 @@ TOURNAMENT_SIZE = 6
 NPARAMS = 32
 ALPHA = 0.03
 
+# comps_in_use = set()
+# comps_in_use_lock = threading.Lock()
+
 
 def main():
 	pop, generation_number = DB.first_pop(POP_SIZE, NPARAMS)
@@ -57,14 +60,12 @@ def make_tournament(rawplayers):
 					cur = db.cursor()
 					try:
 						cur.execute('select host, port from comps where in_use = 0')
-						print >> sys.stderr, 'asdf'
 						hosts = cur.fetchall()
-						print >> sys.stderr, hosts
-
+						# hosts = [ host for host in cur.fetchall()
 
 						try:
 							host, port = random.choice(hosts)
-							print >> sys.stderr, host, port
+							# print >> sys.stderr, host, port
 						except:
 							# print >> sys.stderr, "No clients found, sleeping a little bit..."
 							db.commit()
@@ -75,6 +76,7 @@ def make_tournament(rawplayers):
 						db.commit()
 
 						try:
+							urllib2.urlopen('http://%s:%s/ping' % (host, port), timeout=.5).read()
 							stats = simplejson.loads(urllib2.urlopen('http://%s:%s/execute?%s' % (host, port, params(match[0]['data'] + match[1]['data']))).read())
 							with match[0]['lock']:
 								match[0]['wins'] += stats['p1']
@@ -82,14 +84,14 @@ def make_tournament(rawplayers):
 								match[1]['wins'] += stats['p2']
 							match_queue.task_done()
 						except:
-							print >> sys.stderr, "Game failed. Retrying..."
+							# print >> sys.stderr, "Game failed. Retrying..."
 							time.sleep(0.5)
 							continue
 						finally:
 							cur.execute('update comps set in_use = 0 where host = ? and port = ?', (host, port))
 							db.commit()
 					
-						# print >> sys.stderr, "Game ok."
+						print >> sys.stderr, "Game ok, host=%s, port=%s" % (host, port)
 						break
 					finally:
 						cur.close()
