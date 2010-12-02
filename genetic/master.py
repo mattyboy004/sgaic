@@ -25,6 +25,7 @@ def main():
 		best = natural_selection(pop)
 		pop = next_generation(best, POP_SIZE)
 
+
 def natural_selection(pop):
 	best = []
 	for i in range(SURVIVORS):
