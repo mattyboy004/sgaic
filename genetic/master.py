@@ -107,29 +107,7 @@ def build_tournament(rawplayers):
 	matches = [ (players[i], players[j]) for i in range(len(players)) for j in range(len(players)) if j > i ]
 
 	return {'players': players, 'matches': matches}
-
-
-def get_champ(wins):
-	return wins.index(max(wins))
-
-
-def make_game(comp, port, i, j, pi, pj, wins, winslock):
-	stats = simplejson.loads(urllib2.urlopen('http://%s:%s/execute?%s&%s' % (comp, port, params(pi, 0), params(pj, NPARAMS)))\
-	                         .read())
-	with winslock:
-		wins[i] += stats['p1']
-		wins[j] += stats['p2']
-	DB.release(comp, port)
 	
-	
-def params(player, init=0):
-	return '&'.join([ '%d=%f' % (x[0] + init, x[1]) for x in enumerate(player) ])
-	# ans = ''
-	# for i in range(NPARAMS):
-	# 	ans += str(init + i) + '=' + str(player[i]) + '&'
-	# ans = ans[:-1]
-	# return ans
-
 
 def crossover(popa,popb):
 	popx,popy = popa[:],popb[:]
