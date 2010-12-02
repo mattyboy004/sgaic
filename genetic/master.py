@@ -16,35 +16,50 @@ NPARAMS = 32
 ALPHA = 0.03
 SELECTION_PRESSURE = 0.7 # p for tournament selection
 
-# comps_in_use = set()
-# comps_in_use_lock = threading.Lock()
-
 
 def main():
-	pop, generation_number = DB.first_pop(POP_SIZE, NPARAMS)
-	while True:
-		DB.save(pop, generation_number)
-		generation_number += 1
-		print "Generation number:", generation_number
-		best = natural_selection(pop)
-		pop = next_generation(best, POP_SIZE)
+	global server_socket
+	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	try:
+		server_socket.bind(('0.0.0.0', int(sys.argv[1])))
+		server_socket.listen(5)
+		
+		pop, generation_number = DB.first_pop(POP_SIZE, NPARAMS)
+		while True:
+			DB.save(pop, generation_number)
+			generation_number += 1
+			print "Generation number:", generation_number
+			best = natural_selection(pop)
+			pop = next_generation(best, POP_SIZE)
+	finally:
+		server_socket.close()
 
 
 def natural_selection(pop):
 	best = []
-	for i in range(SURVIVORS):
-		random.shuffle(pop)
-		best.append(make_tournament(pop[:TOURNAMENT_SIZE]))
+	tournaments = [ build_tournament(random.sample(pop, TOURNAMENT_SIZE)) for i in range(SURVIVORS) ]
+	total_matches = sum([ tournament['matches'] for tournament in tournaments ], [])
+	dispatch_matches(total_matches)
+	
+	for tournament in tournaments:
+		players = reversed(sorted(tournament['players'], lambda x: x['wins']))
+		for player in players:
+			if random.random() < SELECTION_PRESSURE:
+				best.append(player['data'])
+				break
+		else:
+			best.append(tournament['players'][-1]['data'])
+			
 	return best
-
-
-def make_tournament(rawplayers):
+	
+	
+def dispatch_matches(matches):
 	# worker target
 	def worker(sock_info, match, outstanding_queue):
 		client_sock, (client_host, client_port) = sock_info
 	
 		print >> sys.stderr, "Dispatching game to (%s, %s)" % (client_host, client_port)
-		print >> sys.stderr, match
+		# print >> sys.stderr, match
 		
 		try:
 			client_sock.sendall(pickle.dumps({'p1': match[0]['data'], 'p2': match[1]['data']}, 2))
@@ -64,44 +79,34 @@ def make_tournament(rawplayers):
 		finally:
 			client_sock.close()
 
-	# tournament matches
-	players = [ {'data': player, 'wins': 0, 'lock': threading.Lock()} for player in rawplayers ]
-	matches = [ (players[i], players[j]) for i in range(len(players)) for j in range(len(players)) if j > i ]
-
 	# initial queue
 	outstanding_queue = Queue.Queue()
 	[ outstanding_queue.put(match) for match in matches ]
 
-	# setting up listening socket
-	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	server_socket.bind(('0.0.0.0', int(sys.argv[1])))
-	server_socket.listen(5)
-
 	# outstanding_queue stores initial and failed games.
 	# current_queue stores the currently processed queue.
-	try:
-		while not outstanding_queue.empty():
-			current_queue = outstanding_queue
-			outstanding_queue = Queue.Queue()
-			threads = []
-		
-			while not current_queue.empty():
-				sock_info = server_socket.accept()
-				match = current_queue.get()
-				thr = Thread(target=worker, args=(sock_info, match, outstanding_queue))
-				threads.append(thr) 
-				thr.start()
-		
-			[ thr.join() for thr in threads ]
-	finally:
-		server_socket.close()
+	while not outstanding_queue.empty():
+		current_queue = outstanding_queue
+		outstanding_queue = Queue.Queue()
+		threads = []
 
-	players.sort(key=lambda v: -v['wins'])
+		while not current_queue.empty():
+			sock_info = server_socket.accept()
+			match = current_queue.get()
+			thr = Thread(target=worker, args=(sock_info, match, outstanding_queue))
+			thr.daemon = True
+			thr.start()
+			threads.append(thr)
+
+		[ thr.join() for thr in threads ]
 	
-	for player in players:
-		if random.random() < SELECTION_PRESSURE:
-			return player['data']
-	return players[-1]['data']
+
+def build_tournament(rawplayers):
+	# tournament matches
+	players = [ {'data': player, 'wins': 0, 'lock': threading.Lock()} for player in rawplayers ]
+	matches = [ (players[i], players[j]) for i in range(len(players)) for j in range(len(players)) if j > i ]
+
+	return {'players': players, 'matches': matches}
 
 
 def get_champ(wins):
