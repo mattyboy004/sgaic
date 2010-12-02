@@ -56,10 +56,11 @@ def make_tournament(rawplayers):
 				while True:
 					cur = db.cursor()
 					try:
-						cur.execute('select host, port from comps where in_use = 0 order by random() limit 1')
+						cur.execute('select host, port from comps where in_use = 0')
+						hosts = cur.fetchall()
 
 						try:
-							host, port = cur.next()
+							host, port = random.sample(hosts)
 						except:
 							# print >> sys.stderr, "No clients found, sleeping a little bit..."
 							db.commit()
