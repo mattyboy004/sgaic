@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-import master, os, glob, pickle, time
+import master, os, glob, pickle, time, sqlite3
 
-comp_available = [('localhost','8080')]
+db = sqlite3.connect('./comps.db')
 
 def save(pop, n):
 	with open("./generations/%05dgen.bot" % n, "w") as f:
@@ -37,16 +37,29 @@ def random_pop(pop_size, nparam):
 
 
 def find_available():
-	global comp_available
-	while len(comp_available) == 0:
-		time.sleep(1)
-	comp, port = comp_available[0]
-	return comp, port				
+	cur = db.cursor()
+	while True:
+		cur.execute('select host, port from comps where in_use = 0 limit 1')
+		try:
+			host, port = cur.next()
+		except StopIteration:
+			continue
+		break
+	cur.close()
+	return host, port
+
 
 def lock(comp, port):
-	comp_available.remove((comp, port))
+	cur = db.cursor()
+	cur.execute('update comps set in_use = 1 where host = ? and port = ?', (comp, port))
+	db.commit()
+	cur.close()
 				
 			
 def release(comp, port):
-	comp_available.append((comp, port))
-
+	newconn = sqlite3.connect('./comps.db')
+	cur = newconn.cursor()
+	cur.execute('update comps set in_use = 0 where host = ? and port = ?', (comp, port))
+	newconn.commit()
+	cur.close()
+	newconn.close()
