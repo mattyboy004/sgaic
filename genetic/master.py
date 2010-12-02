@@ -6,6 +6,7 @@ from bottle import *
 from daemonize import daemonize
 from threading import Thread
 import pickle
+from time import gmtime, strftime, localtime
 
 
 DATA_DIR = 'data/'
@@ -28,7 +29,8 @@ def main():
 		while True:
 			DB.save(pop, generation_number)
 			generation_number += 1
-			print "Generation number:", generation_number
+			print "================ Generation number:", generation_number, "================"
+			print "================ Time:", strftime("%a, %d %b %Y %H:%M:%S +0000", localtime()),"================"
 			best = natural_selection(pop)
 			pop = next_generation(best, POP_SIZE)
 	finally:
