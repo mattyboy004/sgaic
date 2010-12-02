@@ -25,7 +25,7 @@ if __name__ == "__main__":
 	print >> sys.stderr, "Done."
 	print >> sys.stderr
 
-	games = random.sample([ GameParameters("../maps/map%d.txt" % mapnumber) for mapnumber in range(1, 101) ], 1)
+	games = random.sample([ GameParameters("../maps/map%d.txt" % mapnumber) for mapnumber in range(1, 101) ], 10)
 	
 	statistics = {'draw': 0, 'p1': 0, 'p2': 0}
 	statistics_lock = threading.Lock()

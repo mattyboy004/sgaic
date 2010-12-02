@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import time, subprocess, simplejson, shlex, sys
+import time, subprocess, simplejson, shlex, sys, daemonize
 from bottle import *
 
 
@@ -22,6 +22,7 @@ def execute():
 
 
 if __name__ == '__main__':
+	daemonize(stdin='/dev/null', stdout='./log/stdout-log.txt', stderr='./log/stderr-log.txt')
 	run(host='0.0.0.0',
 	    port=int(sys.argv[1]),
 	    reloader=True)
