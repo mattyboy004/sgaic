@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import time, subprocess, simplejson, shlex
+import time, subprocess, simplejson, shlex, sys
 from bottle import *
 
 
@@ -22,5 +22,5 @@ def execute():
 
 if __name__ == '__main__':
 	run(host='0.0.0.0',
-	    port=8080,
+	    port=sys.argv[1],
 	    reloader=True)
