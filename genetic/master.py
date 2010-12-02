@@ -39,18 +39,6 @@ def natural_selection(pop):
 
 
 def make_tournament(rawplayers):
-	players = [ {'data': player, 'wins': 0, 'lock': threading.Lock()} for player in rawplayers ]
-	matches = [ (players[i], players[j]) for i in range(len(players)) for j in range(len(players)) if j > i ]
-
-	# initial queue
-	outstanding_queue = Queue.Queue()
-	[ outstanding_queue.put(match) for match in matches ]
-	
-	# setting up listening socket
-	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	server_socket.bind(('0.0.0.0', int(sys.argv[1])))
-	server_socket.listen(5)
-	
 	# worker target
 	def worker(sock_info, match, outstanding_queue):
 		client_sock, (client_host, client_port) = sock_info
@@ -73,22 +61,40 @@ def make_tournament(rawplayers):
 				match[0]['wins'] += match_result['p1']
 			with match[1]['lock']:
 				match[1]['wins'] += match_result['p2']
-				
+		finally:
+			client_sock.close()
+
+	# tournament matches
+	players = [ {'data': player, 'wins': 0, 'lock': threading.Lock()} for player in rawplayers ]
+	matches = [ (players[i], players[j]) for i in range(len(players)) for j in range(len(players)) if j > i ]
+
+	# initial queue
+	outstanding_queue = Queue.Queue()
+	[ outstanding_queue.put(match) for match in matches ]
+
+	# setting up listening socket
+	server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	server_socket.bind(('0.0.0.0', int(sys.argv[1])))
+	server_socket.listen(5)
+
 	# outstanding_queue stores initial and failed games.
 	# current_queue stores the currently processed queue.
-	while not outstanding_queue.empty():
-		current_queue = outstanding_queue
-		outstanding_queue = Queue.Queue()
-		threads = []
+	try:
+		while not outstanding_queue.empty():
+			current_queue = outstanding_queue
+			outstanding_queue = Queue.Queue()
+			threads = []
 		
-		while not current_queue.empty():
-			sock_info = server_socket.accept()
-			match = current_queue.get()
-			thr = Thread(target=worker, args=(sock_info, match, outstanding_queue))
-			threads.append(thr) 
-			thr.start()
+			while not current_queue.empty():
+				sock_info = server_socket.accept()
+				match = current_queue.get()
+				thr = Thread(target=worker, args=(sock_info, match, outstanding_queue))
+				threads.append(thr) 
+				thr.start()
 		
-		[ thr.join() for thr in threads ]
+			[ thr.join() for thr in threads ]
+	finally:
+		server_socket.close()
 
 	players.sort(key=lambda v: -v['wins'])
 	
