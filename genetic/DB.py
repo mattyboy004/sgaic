@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import master, os, glob, pickle, time, sqlite3
 
-db = sqlite3.connect('./comps.db')
 
 def save(pop, n):
 	with open("./generations/%05dgen.bot" % n, "w") as f:
@@ -16,6 +15,7 @@ def first_pop(pop_size, nparam):
 
 def db_has_data():
 	return len(glob.glob("./generations/*")) != 0
+
 
 def db_pop(pop_size, nparam):
 	gen = sorted(glob.glob("./generations/*"))[-1]
@@ -50,16 +50,14 @@ def find_available():
 
 
 def lock(comp, port):
-	cur = db.cursor()
-	cur.execute('update comps set in_use = 1 where host = ? and port = ?', (comp, port))
-	db.commit()
-	cur.close()
+	with db:
+		db.execute('update comps set in_use = 1 where host = ? and port = ?', (comp, port))
 				
 			
 def release(comp, port):
-	newconn = sqlite3.connect('./comps.db')
-	cur = newconn.cursor()
-	cur.execute('update comps set in_use = 0 where host = ? and port = ?', (comp, port))
-	newconn.commit()
-	cur.close()
-	newconn.close()
+	with db:
+		db.execute('update comps set in_use = 0 where host = ? and port = ?', (comp, port))
+
+
+def connect():
+	return sqlite3.connect('./comps.db')

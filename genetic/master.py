@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time, subprocess, simplejson, shlex, urllib2, random, DB, threading
+import time, subprocess, simplejson, shlex, urllib2, random, DB, threading, Queue
 from bottle import *
 from daemonize import daemonize
 from threading import Thread
@@ -33,27 +33,67 @@ def natural_selection(pop):
 	return best
 
 
-def make_tournament(players):
-	N = len(players)
-	wins = [0]*N
-	winslock = threading.Lock()
+def make_tournament(rawplayers):
+	players = [ {'data': player, 'wins': 0, 'lock': threading.Lock()} for player in rawplayers ]
+	matches = [ (players[i], players[j]) for i in range(len(players)) for j in range(len(players)) if j > i ]
+
+	match_queue = Queue.Queue()
+	[ match_queue.put(match) for match in matches ]
 	
-	games = []
-	for i in range(N):
-		for j in range(i + 1, N):
+	def worker():
+		print >> sys.stderr, "Starting worker"
+		db = DB.connect()
+		while True:
+			try:
+				match = match_queue.get()
+			except:
+				db.close()
+				break
+				
+			print >> sys.stderr, "Got task"
+				
 			while True:
-				comp, port = DB.find_available()
-				DB.lock(comp, port)
-				try: 
-					game = Thread(target = make_game, args = (comp, port, i, j, players[i], players[j], wins, winslock))
-					game.start()
-					games.append(game)
-					break
+				cur = db.cursor()
+				cur.execute('select host, port from comps where in_use = 0 order by random() limit 1')
+
+				try:
+					host, port = cur.next()
 				except:
+					print >> sys.stderr, "No clients found, sleeping a little bit..."
+					db.commit()
+					time.sleep(0.5)
 					continue
-	for game in games:
-		game.join()
-	return players[get_champ(wins)]
+					
+				cur.execute('update comps set in_use = 1 where host = ? and port = ?', (host, port))
+				db.commit()
+
+				try:
+					stats = simplejson.loads(urllib2.urlopen('http://%s:%s/execute?%s' % (host, port, params(match[0]['data'] + match[1]['data']))).read())
+					with match[0]['lock']:
+						match[0]['wins'] += stats['p1']
+					with match[1]['lock']:
+						match[1]['wins'] += stats['p2']
+					match_queue.task_done()
+				except:
+					print >> sys.stderr, "Game failed. Retrying..."
+					continue
+				finally:
+					cur.execute('update comps set in_use = 0 where host = ? and port = ?', (host, port))
+					db.commit()
+					
+				print >> sys.stderr, "Game ok."
+				cur.close()
+				break
+	
+	for i in range(10):
+		t = Thread(target=worker)
+		t.daemon = True
+		t.start()
+	
+	match_queue.join()
+	
+	max_wins = max([ player['wins'] for player in players ])
+	return [ player['data'] for player in players if player['wins'] == max_wins ][0]
 
 
 def get_champ(wins):
@@ -67,14 +107,15 @@ def make_game(comp, port, i, j, pi, pj, wins, winslock):
 		wins[i] += stats['p1']
 		wins[j] += stats['p2']
 	DB.release(comp, port)
-
-
-def params(player, init):
-	ans = ''
-	for i in range(NPARAMS):
-		ans += str(init + i) + '=' + str(player[i]) + '&'
-	ans = ans[:-1]
-	return ans
+	
+	
+def params(player, init=0):
+	return '&'.join([ '%d=%f' % (x[0] + init, x[1]) for x in enumerate(player) ])
+	# ans = ''
+	# for i in range(NPARAMS):
+	# 	ans += str(init + i) + '=' + str(player[i]) + '&'
+	# ans = ans[:-1]
+	# return ans
 
 
 def crossover(popa,popb):
