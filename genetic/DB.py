@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import master, os, glob, pickle, time
 
-comp_available = [('localhost','4000')]
+comp_available = [('localhost','8080')]
 
 def save(pop, n):
 	with open("./generations/%05dgen.bot" % n, "w") as f:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time, subprocess, simplejson, shlex, urllib2, random, DB
+import time, subprocess, simplejson, shlex, urllib2, random, DB, threading
 from bottle import *
 from daemonize import daemonize
 from threading import Thread
@@ -14,7 +14,6 @@ SURVIVORS = 15
 TOURNAMENT_SIZE = 6
 NPARAMS = 32
 ALPHA = 0.03
-wins = []
 
 
 def main():
@@ -36,8 +35,8 @@ def natural_selection(pop):
 
 def make_tournament(players):
 	N = len(players)
-	global wins 
 	wins = [0]*N
+	winslock = threading.Lock()
 	
 	games = []
 	for i in range(N):
@@ -45,7 +44,7 @@ def make_tournament(players):
 			comp, port = DB.find_available()
 			DB.lock(comp, port)
 			try: 
-				game = Thread(target = make_game, args = (comp, port, i, j))
+				game = Thread(target = make_game, args = (comp, port, i, j, players[i], players[j], wins, winslock))
 				game.start()
 				games.append(game)
 			except:
@@ -53,25 +52,29 @@ def make_tournament(players):
 				pass
 	for game in games:
 		game.join()
-	return players[get_champ()]
+	return players[get_champ(wins)]
 
 
-def get_champ():
+def get_champ(wins):
 	return wins.index(max(wins))
 
 
-def make_game(comp, port, i, j):
-	# info = urllib2.urlopen('http://' + comp + ':' + port + '/execute?' + 
-	#					params(player[i],0) + params(player[j],NPARAMS))
-	# wins[i], win[j] = wini, winj
-	DB.release(comp, port)
+def make_game(comp, port, i, j, pi, pj, wins, winslock):
+	with urllib2.urlopen('http://%s:%s/execute?%s&%s' % (comp, port, params(pi, 0), params(pj, NPARAMS))) as f:
+		stats = simplejson.loads(f.read())
+		with winslock:
+			wins[i] += stats['p1']
+			wins[j] += stats['p2']
+		DB.release(comp, port)
+
 
 def params(player, init):
 	ans = ''
 	for i in range(NPARAMS):
-		ans += str(init + i) + '=' + player[i] + '&'
+		ans += str(init + i) + '=' + str(player[i]) + '&'
 	ans = ans[:-1]
 	return ans
+
 
 def crossover(popa,popb):
 	popx,popy = popa[:],popb[:]
