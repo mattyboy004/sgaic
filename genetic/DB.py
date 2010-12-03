@@ -25,15 +25,7 @@ def db_pop(pop_size, nparam):
 	
 
 def random_pop(pop_size, nparam):
-	pop = []
-	init = [-1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, -1, 0, 0, 0, 0.8, 0, 0, 0, 0, 1, 0, 0, 0, 0.8, 0, 0]
-	pop.append(init)
-	for i in range(pop_size - 1):
-		new = []
-		for j in range(nparam):
-			new.append(master.get_random_param())
-		pop.append(new)
-	return pop
+	return [ [ master.get_random_param() for j in range(nparam) ] for i in range(pop_size) ]
 
 
 def connect():
