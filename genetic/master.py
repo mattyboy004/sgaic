@@ -10,11 +10,11 @@ from time import gmtime, strftime, localtime
 
 
 DATA_DIR = 'data/'
-POP_SIZE = 50
-SURVIVORS = 15
+POP_SIZE = 60
+SURVIVORS = 20
 TOURNAMENT_SIZE = 6
 NPARAMS = 32
-ALPHA = 0.03
+ALPHA = 0.04
 SELECTION_PRESSURE = 0.7 # p for tournament selection
 
 
