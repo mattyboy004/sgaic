@@ -1,0 +1,14 @@
+syntax: glob
+*~
+*.class
+*.DS_Store
+*.pyc
+java_starter_package/MyBot.zip
+java_starter_package/testing/adversary/MyBot.java
+java_starter_package/testing/log.txt
+java_starter_package/log.txt
+genetic/generations/
+genetic/comps.db
+java_starter_package/testing/*.log
+Rela/*.aux
+Rela/*.log
