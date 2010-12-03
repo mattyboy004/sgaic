@@ -1,0 +1,239 @@
+\documentclass[a4paper,titlepage,11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\setlength{\parskip}{\medskipamount}
+\setlength{\parindent}{0pt}
+\usepackage{graphicx}
+\usepackage{a4wide}
+\usepackage[portuges,brazilian]{babel} % need to be invoked BEFORE xypic
+\shorthandon" % needed so that the meaning of " is the same when xypic is loaded and when it's invoked.
+\usepackage{amssymb, amsmath}
+\usepackage{rotating}
+\usepackage[all]{xy}
+\usepackage{cancel}
+\usepackage{fancyhdr}
+\usepackage{enumerate}
+\usepackage{units}
+%\usepackage[notref,color,final]{showkeys}
+\usepackage[aboveskip=3pt,font={small,sf},labelfont=bf]{caption}
+\usepackage{subfig}
+\usepackage{fancyvrb}
+\usepackage{xcolor}
+\usepackage{multirow}
+
+%%%
+%%% TITLE PAGE
+%%%
+
+\newcommand{\mydivision}{Divisão de Ciência da Computação\\Departamento de Teoria da Computação}
+
+\newcommand{\mydiscipline}{CTC-15: Inteligência Artificial}
+
+\newcommand{\mysupertitle}{Trabalho de Exame}
+
+\newcommand{\mytitle}{Planet Wars}
+
+\newcommand{\myname}{Cesar R. Kawakami\\Guilherme R. N. Souza\\Leonardo Ribeiro Carvalho\\Rodrigo Simões Almeida}
+
+\newcommand{\myfieldAname}{Alunos}
+
+\newcommand{\myfieldAcontent}{\myname}
+
+\newcommand{\myfieldBname}{Professor}
+
+\newcommand{\myfieldBcontent}{Carlos Henrique Ribeiro}
+
+\newcommand{\myfieldCname}{\ }
+
+\newcommand{\myfieldCcontent}{\ }
+
+\newcommand{\mydate}{02 de Dezembro de 2010}
+
+\renewcommand{\maketitle}{%
+ 	\begin{titlepage}
+		\begin{center}
+			\includegraphics[scale=0.125]{/Users/firer/Library/TeXShop/Templates/ITA/ita}\\
+			\ \\ % forca uma linha em branco
+			\textsc{%
+				\Large Instituto Tecnológico de Aeronáutica\\
+				\large%
+				\ \\
+				\mydivision\\
+				\textbf{\mydiscipline}\\
+			}
+			\vspace{2cm}
+			\textbf{%
+				\textsc{\large \mysupertitle}\\
+				\ \\
+				\huge \mytitle\\
+				\ \\
+			}
+			\vspace{2cm}
+			\begin{flushleft}
+				\large \myfieldAname\\
+				\Large \myfieldAcontent\\
+				\ \\
+				\large \myfieldBname\\
+				\Large \myfieldBcontent\\
+				\ \\
+				\large \myfieldCname\\
+				\Large \myfieldCcontent\\
+			\end{flushleft}
+			\vfill
+			{\large \mydate}
+		\end{center}		
+	\end{titlepage}
+}	
+
+%%%
+%%% PAGE SETTINGS
+%%%
+
+% FANCY HEADERS
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot{}
+\fancyhead[LO]{\small\textsf{Exame: \mytitle}}
+%\fancyhead[RO]{\small\textsf{Kawakami, Carvalho, Souza, Almeida}}
+\fancyfoot[CO]{\textsf\thepage}
+\setlength{\headheight}{14pt}
+%\setlength{\footheight}{14pt}
+\renewcommand{\headrulewidth}{0.4pt} 
+%\renewcommand{\footrulewidth}{0.4pt}
+
+%%%rr
+%%% MANY FLOATS
+%%%
+\renewcommand{\topfraction}{.85}
+\renewcommand{\bottomfraction}{.7}
+\renewcommand{\textfraction}{.15}
+\renewcommand{\floatpagefraction}{.66}
+\renewcommand{\dbltopfraction}{.66}
+\renewcommand{\dblfloatpagefraction}{.66}
+\setcounter{topnumber}{9}
+\setcounter{bottomnumber}{9}
+\setcounter{totalnumber}{20}
+\setcounter{dbltopnumber}{9}
+
+%%%
+%%% SPECIFIC COMMANDS
+%%%
+\fvset{frame=lines,fontsize=\small,xleftmargin=7pt,xrightmargin=7pt,framerule=1pt,resetmargins=true}
+
+\newcommand{\Lap}[1]{\mathcal{L}\left\{#1\right\}}
+\newcommand{\Equiv}{\Longleftrightarrow}
+\newcommand{\Impl}{\Longrightarrow}
+\newcommand{\DATAHERE}{\colorbox{yellow}{DADOS}}
+
+%%%
+%%% BEGIN DOCUMENT
+%%%
+
+\begin{document}
+
+\maketitle
+
+\section{Objetivos}
+
+Fazer um jogador autônomo para Planet Wars, jogo usado na competição do Google Ai-Contest do ano de 2010. Esse jogador deve aplicar os conceitos e algoritmos vistos na matéria de Inteligência Artificial.
+
+\section{Introdução}
+Planet Wars é um jogo entre dois ou mais jogadores, cujo objetivo final é ter a maior frota de naves dentre todos os participantes. Apesar de uma partida poder ter vários jogadores, todas as partidas realizadas, tanto nos testes como na competição em si, foram realizadas com dois adversários. 
+
+O jogo é dividido em turnos no qual ambos jogadores tem todas informações relevantes disponíveis para tomar suas decisões e enviar frotas para combate. O combate entre frotas ocorre nos planetas, cada nave destrói exatamente uma nave inimiga e também é destruída. Ao final do combate quem tiver o maior número de naves sobreviventes no planeta o domina. Se restarem 0 naves o dono do planeta não muda. O jogador com planetas sob seu domínio tem sua frota local aumentada de acordo com a taxa de crescimento específica, a qual depende do tamanho do planeta dominado.
+
+A abordagem para construção do jogador autônomo (a partir de agora denominado {\em bot}) dividiu-se em duas partes. A primeira foi o desenvolvimento de um {\em bot} que sabe se comunicar com o juíz/servidor e implementa heurísticas (estratégias básicas relacionados ao entendimento do funcionamento geral do jogo). Exemplos de fatores levados em consideração na heurística são: tentar defender suas naves, destruir naves inimigas, benefício trazido por conquistar planetas, entre outros. Mais informações na seção~\ref{seq:Implementação}.
+
+Essa versão inicial foi colocada no servidor do Google Ai-Contest e já apresentou bons resultados. A heurística, contudo, dependia de um conjunto de trinta e dois pesos associados a diferentes situações de jogo. Esses pesos haviam sido escolhidos sem muito critério, apenas seguiram um lógica geral relacionada principalmente ao sinal e módulo do peso associado. Para conseguir um melhor conjunto de pesos foi utilizado um algoritmo genético de evolução também detalhado na seção~\ref{seq:Implementação}.
+
+\section{Implementação}
+\label{seq:Implementação}
+
+
+\subsection{{\em Bot} com estratégia básica}
+Inicialmete foi implementado um {\em bot} com estratégia básica. Toda a avaliação do estado do jogo considera um certo número de jogadas a frente, chamado horizonte. Esse horizonte funciona como uma poda de considerações muito distantes que poderiam atrasar o jogador e evita considerações que não fazem sentido, pois a previsão não considera que haverão jogadas, i.e., essa aboradagem avalia o jogo daqui a um número de jogadas se todos os jogadores tivessem como suas próximas ações não fazer nada. Esse horizonte é calculado levando em consideração a distância média entre planetas a serem defendidos pelo {\em bot} e os planetas dominados pelo adversário.
+
+A estratégia de jogo pode ser definida pelos passos:
+
+\begin{itemize}
+	\item Para cada planeta acha-se quantas naves podem ser mandadas para o ataque sem que o planeta fique muito 		desprotegido e possa ser facilmente conquistado. 
+Para isso, analisa-se as frotas que o estão atacando, achando quantas naves de defesa ele perderia a cada turno até o horizonte. O valor restante de naves ao atingir o horizonte é o valor que é considerado disponível para ataque e defesa, um valor negativo significa perda do domínio.
+	\item Cada planeta com naves de crédito tenta defender outros planetas.
+Cada planeta pertencente ao jogador busca outros planetas que serão consquistados pelo inimigo (previsão negativa no item anterior) tentando fornecer naves suficientes para evitar essa perda. Essa ajuda a planetas vizinhos está condicionada à manutenção do domínio do planeta de origem das naves, caso a ajuda signifique perder o planeta que ajudou a ajuda não acontecerá. A ajuda também considera o tempo que a ajuda demorará para chegar ao planeta ajudado, se ele for conquistado antes de ser possível chegar a ajuda ela não será enviada.
+	\item Com as naves restantes, após defender a si mesmo e fornecer ajuda a planetas aliados, cada planeta busca entre os planetas neutros e do inimigo aquele que apresenta o maior ganho esperado e realiza o ataque.
+Para cada planeta, é calculado um valor que representa o lucro esperado por atacá-lo. Dentro desse lucro é levado em consideração naves perdidas no ataque, naves perdidas pelo inimigo, quantas naves seriam ganhas e quantas naves o inimigo deixaria de ganhar devido à taxa de crescimento fornecida pelo planeta.
+\end{itemize}
+
+Essa estratégia considera os pontos tidos como essenciais para o bom desempenho do jogador e leva em consideração diversos jogos assistidos. A partir desta versão é possível fazer variantes jogarem entre si e selecionar a melhor dentre as opções geradas.
+
+
+\subsection{Algoritmo genético}
+Para a execução do algoritmo foi definido como cromossomo o conjunto de trinta e dois pesos, sendo cada peso um alelo. Uma população é o conjunto de cinquenta cromossomos. A população inicial foi gerada com quarenta e nove {\em bots} com cormossomos aleatórios mais o {\em bot} original.
+
+Após gerar a população inicial, o programa entra em um loop infinito de treinamento no qual repete as seguintes ações: salva a geração, promove a seleção natural e obtém a próxima geração. Salvar a geração signiica simplesmente salvar os pesos de todos os elementos que a compõe em um arquivo. Esses arquivos funcionam como uma espécie de controle de versão.
+
+A seleção natural dos indivíduos e a obtenção da próxima geração são realizadas através do processo:
+\begin{itemize}
+	\item Seleciona, dentro dos cinquenta elementos da população, seis jogadores que irão participar de um campeonato
+	\item Realiza o campeonato, que consiste fazer todas as combinações dois a dois desses jogadores e para cada dupla realizar jogos em 10 mapas aleatórios dentre os 100 existentes 
+	\item Os jogadores são ordenados por número de vitórias (contando uma por mapa) e a seleção de quem produzirá descendentes segue o procedimento conhecido como {\em Tournment Selection} com probalidade de escolher o campeão de 70\%.
+	\item É produzida a nova geração. Dado o conjunto de indivíduos que produzirão descendentes são escolhidos dois aleatoriamente e é feito um crossover uniforme gerando dois indivíduos. Isso é feito cinquenta vezes, até gerar duas vezes o tamanho da população. 
+	\item Esses indivíduos sofrem mutação com probabilidade de 3\%
+	\item Desses cem indivíduos são escolhidos cinquenta aleatoriamente que comporão a próxima geração
+\end{itemize}
+
+O programa foi feito de modo que uma geração pode ser evoluída de maneira paralela, dividindo jogos entre diversos computadores. Essa funcionalidade, junto às técnicas probabilísticas de efetuar campeonatos e seleção de população, foi muito importante, já que a evolução é um gargalo na obtanção de um bom {\em bot}, justamente por ser um processo demorado.
+
+\section{Resultados}
+O {\em bot} que participou da competição oficial no Google Ai-Contest foi a versão original, sem evolução, obtendo a posição 524 de um total de 4617 participantes válidos, ou seja, que o programa rodava adequadamente. O resultado obtido pode ser considerado satisfatório frente ao alto nível dos competidores. Ao final da evolução o bot obtido foi capaz de ganhar do original com relativa facilidade, mostrando a validade do processo.
+
+A evolução atingiu a geração XXXXXXX e teve a seguinte relação de pesos:
+
+\begin{center}
+	\begin{tabular}{cccc}
+		\hline
+		Valor & Descrição \\
+		\hline
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		0 &  \\
+		\hline
+	\end{tabular}
+\end{center}
+
+\section{Possíveis melhorias}
+O programa ainda poderia
+
+\enlargethispage{.5cm}
+\section{Conclusão}
+foi bom
+\end{document}
