@@ -1,4 +1,5 @@
 \documentclass[a4paper,titlepage,11pt]{article}
+
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \setlength{\parskip}{\medskipamount}
@@ -148,20 +149,20 @@
 Fazer um jogador autônomo para Planet Wars, jogo usado na competição do Google Ai-Contest do ano de 2010. Esse jogador deve aplicar os conceitos e algoritmos vistos na matéria de Inteligência Artificial.
 
 \section{Introdução}
-Planet Wars é um jogo entre dois ou mais jogadores, cujo objetivo final é ter a maior frota de naves dentre todos os participantes. Apesar de uma partida poder ter vários jogadores, todas as partidas realizadas, tanto nos testes como na competição em si, foram realizadas com dois adversários. 
+Planet Wars é um jogo entre dois ou mais jogadores, cujo objetivo é, ao final dos turnos, ter a maior frota de naves dentre todos os participantes. Apesar poder ser jogado com vários jogadores, todas as partidas realizadas, tanto nos testes como na competição, foram realizadas entre dois adversários.
 
 O jogo é dividido em turnos no qual ambos jogadores tem todas informações relevantes disponíveis para tomar suas decisões e enviar frotas para combate. O combate entre frotas ocorre nos planetas, cada nave destrói exatamente uma nave inimiga e também é destruída. Ao final do combate quem tiver o maior número de naves sobreviventes no planeta o domina. Se restarem 0 naves o dono do planeta não muda. O jogador com planetas sob seu domínio tem sua frota local aumentada de acordo com a taxa de crescimento específica, a qual depende do tamanho do planeta dominado.
 
 A abordagem para construção do jogador autônomo (a partir de agora denominado {\em bot}) dividiu-se em duas partes. A primeira foi o desenvolvimento de um {\em bot} que sabe se comunicar com o juíz/servidor e implementa heurísticas (estratégias básicas relacionados ao entendimento do funcionamento geral do jogo). Exemplos de fatores levados em consideração na heurística são: tentar defender suas naves, destruir naves inimigas, benefício trazido por conquistar planetas, entre outros. Mais informações na seção~\ref{seq:Implementação}.
 
-Essa versão inicial foi colocada no servidor do Google Ai-Contest e já apresentou bons resultados. A heurística, contudo, dependia de um conjunto de trinta e dois pesos associados a diferentes situações de jogo. Esses pesos haviam sido escolhidos sem muito critério, apenas seguiram um lógica geral relacionada principalmente ao sinal e módulo do peso associado. Para conseguir um melhor conjunto de pesos foi utilizado um algoritmo genético de evolução também detalhado na seção~\ref{seq:Implementação}.
+Essa versão inicial foi colocada no servidor do Google Ai-Contest e já apresentou bons resultados. A heurística, contudo, dependia de um conjunto de trinta e dois pesos associados a diferentes situações de jogo. Esses pesos haviam sido escolhidos sem muito critério, apenas seguiram um lógica geral relacionada ao significado de cada peso. Para conseguir um melhor conjunto de pesos foi utilizado um algoritmo genético de evolução também detalhado na seção~\ref{seq:Implementação}.
 
 \section{Implementação}
 \label{seq:Implementação}
 
 
 \subsection{{\em Bot} com estratégia básica}
-Inicialmete foi implementado um {\em bot} com estratégia básica. Toda a avaliação do estado do jogo considera um certo número de jogadas a frente, chamado horizonte. Esse horizonte funciona como uma poda de considerações muito distantes que poderiam atrasar o jogador e evita considerações que não fazem sentido, pois a previsão não considera que haverão jogadas, i.e., essa aboradagem avalia o jogo daqui a um número de jogadas se todos os jogadores tivessem como suas próximas ações não fazer nada. Esse horizonte é calculado levando em consideração a distância média entre planetas a serem defendidos pelo {\em bot} e os planetas dominados pelo adversário.
+Inicialmete foi implementado um {\em bot} com estratégia básica. Toda a avaliação do estado do jogo considera um certo número de jogadas a frente, chamado horizonte. Esse horizonte funciona como uma poda de considerações muito distantes que poderiam atrasar o jogador e evita considerações que não fazem sentido, pois a previsão não considera que haverão jogadas, i.e., essa aboradagem avalia o jogo daqui a um número de jogadas se todos os jogadores tivessem como suas próximas ações não fazer nada. Esse horizonte é calculado levando em consideração a distância média entre planetas pertencentes ao {\em bot} e os planetas dominados pelo adversário.
 
 A estratégia de jogo pode ser definida pelos passos:
 
@@ -169,13 +170,14 @@ A estratégia de jogo pode ser definida pelos passos:
 	\item Para cada planeta acha-se quantas naves podem ser mandadas para o ataque sem que o planeta fique muito 		desprotegido e possa ser facilmente conquistado. 
 Para isso, analisa-se as frotas que o estão atacando, achando quantas naves de defesa ele perderia a cada turno até o horizonte. O valor restante de naves ao atingir o horizonte é o valor que é considerado disponível para ataque e defesa, um valor negativo significa perda do domínio.
 	\item Cada planeta com naves de crédito tenta defender outros planetas.
-Cada planeta pertencente ao jogador busca outros planetas que serão consquistados pelo inimigo (previsão negativa no item anterior) tentando fornecer naves suficientes para evitar essa perda. Essa ajuda a planetas vizinhos está condicionada à manutenção do domínio do planeta de origem das naves, caso a ajuda signifique perder o planeta que ajudou a ajuda não acontecerá. A ajuda também considera o tempo que a ajuda demorará para chegar ao planeta ajudado, se ele for conquistado antes de ser possível chegar a ajuda ela não será enviada.
+Cada planeta pertencente ao jogador busca outros planetas que serão consquistados pelo inimigo (previsão negativa no item anterior) tentando fornecer naves suficientes para evitar essa perda. Essa ajuda a planetas vizinhos está condicionada à manutenção do domínio do planeta de origem das naves, caso a ajuda signifique perder o planeta original a ajuda não acontecerá. A ajuda também considera o tempo que a ajuda demorará para chegar ao planeta ajudado, se ele for conquistado antes de ser possível chegar a ajuda ela não será enviada.
 	\item Com as naves restantes, após defender a si mesmo e fornecer ajuda a planetas aliados, cada planeta busca entre os planetas neutros e do inimigo aquele que apresenta o maior ganho esperado e realiza o ataque.
-Para cada planeta, é calculado um valor que representa o lucro esperado por atacá-lo. Dentro desse lucro é levado em consideração naves perdidas no ataque, naves perdidas pelo inimigo, quantas naves seriam ganhas e quantas naves o inimigo deixaria de ganhar devido à taxa de crescimento fornecida pelo planeta.
+Para cada planeta, é calculado um valor que representa o lucro esperado por atacá-lo. Dentro desse lucro é levado em consideração naves perdidas no ataque, naves perdidas pelo inimigo, quantas naves seriam ganhas e quantas naves o inimigo deixaria de ganhar devido à taxa de crescimento fornecida pelo planeta. Cada um desses critérios é ponderado com o uso de quatro pesos, que representam uma parte do estado do jogo tais como a distância do planeta aos outros (amigos e inimigos) o relação do lucro de cada jogador e a relação de naves totais de cada jogador.
 \end{itemize}
 
-Essa estratégia considera os pontos tidos como essenciais para o bom desempenho do jogador e leva em consideração diversos jogos assistidos. A partir desta versão é possível fazer variantes jogarem entre si e selecionar a melhor dentre as opções geradas.
+Essa estratégia considera alguns dos pontos tidos como essenciais para o bom desempenho do jogador e leva em consideração diversos jogos assistidos. A partir desta versão é possível fazer variantes jogarem entre si e selecionar a melhor dentre as opções geradas.
 
+<<<<<<< local
 \subsubsection{Detalhamento em algoritmo da estratégia utilizada}
 
 A estratégia geral de jogo, em cada turno, é dada por
@@ -210,74 +212,46 @@ A estratégia geral de jogo, em cada turno, é dada por
 \end{algorithmic}
 
 
+=======
+Um detalhamento completo da heurística encontra-se no código em anexo, com comentários que facilitam o entendimento.
+>>>>>>> other
 
 \subsection{Algoritmo genético}
-Para a execução do algoritmo foi definido como cromossomo o conjunto de trinta e dois pesos, sendo cada peso um alelo. Uma população é o conjunto de cinquenta cromossomos. A população inicial foi gerada com quarenta e nove {\em bots} com cormossomos aleatórios mais o {\em bot} original.
+Para a execução do algoritmo foi definido como cromossomo o conjunto de trinta e dois pesos, sendo cada peso um alelo. Uma população é o conjunto de sessenta cromossomos. A população inicial foi gerada aleatoriamente.
 
-Após gerar a população inicial, o programa entra em um loop infinito de treinamento no qual repete as seguintes ações: salva a geração, promove a seleção natural e obtém a próxima geração. Salvar a geração signiica simplesmente salvar os pesos de todos os elementos que a compõe em um arquivo. Esses arquivos funcionam como uma espécie de controle de versão.
+Após gerar a população inicial, o programa entra em um loop infinito de treinamento no qual repete as seguintes ações: salva a geração, promove a seleção natural e obtém a próxima geração. Salvar a geração significa simplesmente salvar os pesos de todos os elementos que a compõe em um arquivo. Esses arquivos funcionam como uma espécie de controle de versão.
 
 A seleção natural dos indivíduos e a obtenção da próxima geração são realizadas através do processo:
 \begin{itemize}
-	\item Seleciona, dentro dos cinquenta elementos da população, seis jogadores que irão participar de um campeonato
+	\item Seleciona, dentro dos sessenta elementos da população, seis jogadores que irão participar de um campeonato
 	\item Realiza o campeonato, que consiste fazer todas as combinações dois a dois desses jogadores e para cada dupla realizar jogos em 10 mapas aleatórios dentre os 100 existentes 
-	\item Os jogadores são ordenados por número de vitórias (contando uma por mapa) e a seleção de quem produzirá descendentes segue o procedimento conhecido como {\em Tournment Selection} com probalidade de escolher o campeão de 70\%.
-	\item É produzida a nova geração. Dado o conjunto de indivíduos que produzirão descendentes são escolhidos dois aleatoriamente e é feito um crossover uniforme gerando dois indivíduos. Isso é feito cinquenta vezes, até gerar duas vezes o tamanho da população. 
-	\item Esses indivíduos sofrem mutação com probabilidade de 3\%
-	\item Desses cem indivíduos são escolhidos cinquenta aleatoriamente que comporão a próxima geração
+	\item Os jogadores são ordenados por número de vitórias (contando uma por mapa) e a seleção de quem produzirá descendentes segue o procedimento conhecido como {\em Tournment Selection} com probalidade de escolher o campeão de 70\%
+	\item Os passos anteriores são repetidos até terem sido escolhidos 20 "campeões"
+	\item É produzida a nova geração. Dado o conjunto de indivíduos que produzirão descendentes são escolhidos dois aleatoriamente e é feito um crossover uniforme gerando dois indivíduos. Isso é feito sessenta vezes, até gerar duas vezes o tamanho da população. 
+	\item Esses indivíduos sofrem mutação com probabilidade de 4\%
+	\item Desses cem indivíduos são escolhidos sessenta aleatoriamente que comporão a próxima geração
 \end{itemize}
 
 O programa foi feito de modo que uma geração pode ser evoluída de maneira paralela, dividindo jogos entre diversos computadores. Essa funcionalidade, junto às técnicas probabilísticas de efetuar campeonatos e seleção de população, foi muito importante, já que a evolução é um gargalo na obtanção de um bom {\em bot}, justamente por ser um processo demorado.
 
 \section{Resultados}
-O {\em bot} que participou da competição oficial no Google Ai-Contest foi a versão original, sem evolução, obtendo a posição 524 de um total de 4617 participantes válidos, ou seja, que o programa rodava adequadamente. O resultado obtido pode ser considerado satisfatório frente ao alto nível dos competidores. Ao final da evolução o bot obtido foi capaz de ganhar do original com relativa facilidade, mostrando a validade do processo.
+O {\em bot} que participou da competição oficial no Google Ai-Contest foi a versão original, sem evolução, obtendo a posição 524 de um total de 4617 participantes. O resultado obtido pode ser considerado satisfatório frente ao alto nível dos competidores.
 
-A evolução atingiu a geração XXXXXXX e teve a seguinte relação de pesos:
+O processo de evolução foi realizado duas vezes. Na primeira o {\em bot} original fez parte da primeira população e o resultado foi um bot praticamente equivalente ao primeiro considerando os resultados, apesar do valor dos pesos serem diferentes. A convergência nesse caso demorou somente 25 turnos o que gerou grande suspeita de um máximo local. Alguns parâmetros (geração da população original, tamanho da população, entre outros) foram levemente alterados na tentativa de obter um novo conjunto de pesos melhor.
 
-\begin{center}
-	\begin{tabular}{cccc}
-		\hline
-		Valor & Descrição \\
-		\hline
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		0 &  \\
-		\hline
-	\end{tabular}
-\end{center}
+No decocorrer da segunda evolução, mais especificamente na geração 44, foi possível notar que a população havia mais uma vez convergido, a maior parte dos indíviduos eram razoavelmente semelhantes. Foi realizado um teste, jogando todos os mapas, realizando o confronto da versão original do {\em bot} contra a versão evoluída. O placar obtido foi 56 vitórias da nova versão, 43 vitórias da versão original e 1 empate. Apesar de não ser uma vitória expressiva, mostra evolução.
+
+COLOCAR O RESULTADO DO TORNEIO
 
 \section{Possíveis melhorias}
-O programa ainda poderia
+O programa poderia levar em conta outros fatores do estado do jogo para a avaliação do lucro de um planeta. Uma estratégia não implementada que é utilizada pelos {\em bots} com melhor resultado é o uso das chamadas {\em rotas de abastecimento}, na qual o {\em bot} mantém um fluxo de naves saindo dos planetas mais afastados do inimigo para os planetas mais próximos, de modo que ele tem mais naves na região de disputa. Outra melhoria seria o ataque e defesa em conjunto, onde um planeta não tem naves suficientes para conquistar ou defender um planeta, mas junto com outros poderia ter. Por fim, o {\em bot} não avalia as jogadas do adversário, fator que pode ser importante para as decisões das jogadas.
 
-\enlargethispage{.5cm}
+Com mais tempo poderiam ser testados outros métodos de evolução, com outras formas de crossover, outras taxas de mutação ou outras formas de realizar os torneios. Esse fatores deveriam ser mudados para deixar a tempo de convergência maior, já que uma convergência em apenas 44 gerações indica uma certa probabilidade desse resultado ser apenas um máximo local de desempenho do jogador.
+
 \section{Conclusão}
-foi bom
+Um ponto que chamou a atenção é a grande possibilidade de paralelizar a execução do algoritmo genético. Foi possível realizar uma grande quantidade de jogos em paralelo, em tese é possível realizar todos os jogos de uma geração em paralelo. 
+
+Outro ponto interessante é que mesmo a população inicial sendo gerada aleatoriamente, de modo que os pesos não tinham sentido lógico, ao decorrer do tempo foram sendo criadas novas populações que acabaram por superar o {\em bot} cujos pesos foram selecionados manualmente.
+
+A execução da evolução genética através de uma seleção baseada em torneio entre os indivíduos da população, considerando que todos os indivíduos trabalham sob um mesmo arcabouço, pode levar a uma população limite com boas características mas suscetível àquelas estratégias às quais não foi exposta, em analogia ao que realmente ocorre na natureza. É difícil dizer se o indivíduo gerado ao final do processo é robusto.
 \end{document}
