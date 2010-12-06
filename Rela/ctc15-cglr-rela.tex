@@ -1,4 +1,5 @@
 \documentclass[a4paper,titlepage,11pt]{article}
+
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \setlength{\parskip}{\medskipamount}
@@ -166,6 +167,7 @@ Para cada planeta, é calculado um valor que representa o lucro esperado por ata
 
 Essa estratégia considera alguns dos pontos tidos como essenciais para o bom desempenho do jogador e leva em consideração diversos jogos assistidos. A partir desta versão é possível fazer variantes jogarem entre si e selecionar a melhor dentre as opções geradas.
 
+Um detalhamento completo da heurística encontra-se no código em anexo, com comentários que facilitam o entendimento.
 
 \subsection{Algoritmo genético}
 Para a execução do algoritmo foi definido como cromossomo o conjunto de trinta e dois pesos, sendo cada peso um alelo. Uma população é o conjunto de sessenta cromossomos. A população inicial foi gerada aleatoriamente.
@@ -188,7 +190,7 @@ O programa foi feito de modo que uma geração pode ser evoluída de maneira par
 \section{Resultados}
 O {\em bot} que participou da competição oficial no Google Ai-Contest foi a versão original, sem evolução, obtendo a posição 524 de um total de 4617 participantes. O resultado obtido pode ser considerado satisfatório frente ao alto nível dos competidores.
 
-O processo de evolução foi realizado duas vezes. Na primeira o {\em bot} original fez parte da primeira população e o resultado foi um bot praticamente equivalente ao primeiro considerando os resultados, apesar do valor dos pesos serem diferentes. A convergência nesse caso demorou somente 25 turnos o que gerou grande suspeita de um máximo local. Alguns parâmetros (geração da população original, tamanho da população, entre outros) foram levemente alterados na tentativa de obter um novo conjunto de peses melhor.
+O processo de evolução foi realizado duas vezes. Na primeira o {\em bot} original fez parte da primeira população e o resultado foi um bot praticamente equivalente ao primeiro considerando os resultados, apesar do valor dos pesos serem diferentes. A convergência nesse caso demorou somente 25 turnos o que gerou grande suspeita de um máximo local. Alguns parâmetros (geração da população original, tamanho da população, entre outros) foram levemente alterados na tentativa de obter um novo conjunto de pesos melhor.
 
 No decocorrer da segunda evolução, mais especificamente na geração 44, foi possível notar que a população havia mais uma vez convergido, a maior parte dos indíviduos eram razoavelmente semelhantes. Foi realizado um teste, jogando todos os mapas, realizando o confronto da versão original do {\em bot} contra a versão evoluída. O placar obtido foi 56 vitórias da nova versão, 43 vitórias da versão original e 1 empate. Apesar de não ser uma vitória expressiva, mostra evolução.
 

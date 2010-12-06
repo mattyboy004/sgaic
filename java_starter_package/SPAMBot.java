@@ -32,16 +32,17 @@ public class SPAMBot
 	// Poda! Determina qual o número de turnos o algoritmo vai prucurar
 	public static void calculateMaxTurns()
 	{
-		max_turns = 0;// mudar de acordo com a situcao
+		max_turns = 0;
 		for (Planet p1 : pw.MyPlanets())
 			for (Planet p2 : pw.NotMyPlanets())
-				max_turns += pw.Distance(p1.PlanetID(), p2.PlanetID());
+				max_turns += pw.Distance(p1.PlanetID(), p2.PlanetID()); // pondera a distância entre os planetas
 		if (pw.MyPlanets().size() * pw.NotMyPlanets().size() > 0)
-			max_turns /= (pw.MyPlanets().size() * pw.NotMyPlanets().size());
-		max_turns = 3 * max_turns / 2 + 10;
+			max_turns /= (pw.MyPlanets().size() * pw.NotMyPlanets().size()); // faz com que seja considerada a distância média
+		max_turns = 3 * max_turns / 2 + 10; // valor ajustado experimentalmente
 	}
 	
 	// Contabiliza todas as naves de fleets que estão viajando e quem elas vão atacar
+	// who = quem são os alvos
 	public static void checkTravelingShips(int who[][], List<Fleet> fleets)
 	{
 		for (Fleet f : fleets)
@@ -67,10 +68,10 @@ public class SPAMBot
 	}
 
 	// Calcula a média da distância de cada planeta ao planetas amigos e inimigos. Com isso avalia o quão
-	// protegido o planeta está e, consequentemente, o qual bizu ele é.
+	// protegido o planeta está e, consequentemente, o qual bom de ser mantido/capturado ele é.
 	public static void calculateDistance()
 	{
-		for (int i = 0; i < pw.NumPlanets(); i++)
+		for (int i = 0; i < pw.NumPlanets(); i++) // inicializando
 			distancia[i][ME] = distancia[i][ENEMY] = 0.0;
 
 		for (Planet p : pw.Planets())
@@ -81,7 +82,7 @@ public class SPAMBot
 	}
 	
 	// Função auxiliar de calculateDistance. Faz o cáclculo para cada planeta, dado se está avaliando o meu planeta 
-	// ou inimigo
+	// ou do inimigo
 	public static void calculateDistanceOfFrom(Planet p, List<Planet> planets, int index)
 	{
 		for (Planet q : planets)
@@ -92,44 +93,43 @@ public class SPAMBot
 			distancia[p.PlanetID()][index] = DEFAULT_DISTANCE[index];
 	}
 
-	//TODO melhorar esse método
-	//Está meio antintuitivo. Escolhe o planeta a ser defendido por p em ordem numérica. 
+	//Escolhe o planeta a ser defendido por p em ordem numérica. 
 	//Idéia de melhoria: Dar p o planeta a ser protegido e procurar um planeta bizu para defendê-lo
 	public static int defend(Planet p, PlanetWars pw, int score)
 	{
 		for (Planet q : pw.MyPlanets())// defesa
 		{
-			int tera = q.NumShips();
+			int tera = q.NumShips(); // número de naves em q agora
 			for (int i = 1; i < MAX_TURN; i++)
 			{
-				tera = tera + q.GrowthRate() - atacado[q.PlanetID()][i] + ataca[q.PlanetID()][i];
-				if (tera < 0)
+				tera = tera + q.GrowthRate() - atacado[q.PlanetID()][i] + ataca[q.PlanetID()][i]; // atualização do número de naves
+				if (tera < 0) //será dominado pelo inimigo
 				{
-					int attack = -tera;
+					int attack = -tera; // quantas naves deve receber
+					// se vale a pena salvar e a pela distância é capaz de ajudar
 					if (score > attack && pw.Distance(p.PlanetID(), q.PlanetID()) <= i)
 					{
-						ataca[q.PlanetID()][i] += attack;
-						pw.IssueOrder(p, q, attack);
-						score -= attack;
+						ataca[q.PlanetID()][i] += attack; // determina o ataque de ajuda que virá do planeta i
+						pw.IssueOrder(p, q, attack); // específico da interface fornecida pela Google
+						score -= attack; // gastou naves com o pedido acima
 					}
-					break;
+					break; 
 				}
 			}
 		}
 		return score;
 	}
 
-	// Não usado por enquanto (era usado antes). Calcula "pontos heurísticos" ganhos em se atacar um planeta
+	// Calcula pontos heurísticos da conquista do Planeta q
 	public static double expectedWin(Planet q, int turns, double peso[])
 	{
 		int tem = 1;
 		double win = 0;
 		for (int j = turns + 1; j <= max_turns; j++)
 		{
-			win += (peso[2] + peso[3]) * q.GrowthRate();
-			tem += q.GrowthRate() + ataca[q.PlanetID()][j]
-					- atacado[q.PlanetID()][j];
-			if (tem < 0)
+			win += (peso[2] + peso[3]) * q.GrowthRate(); // valoriza taxa de crescimento
+			tem += q.GrowthRate() + ataca[q.PlanetID()][j] - atacado[q.PlanetID()][j]; // saldo de naves de q
+			if (tem < 0) // planeta conqistado pelo inimigo
 				break;
 		}
 		return win;
@@ -146,20 +146,20 @@ public class SPAMBot
 		
 	}
 	
-	//total de cada jogador
+	//total de naves de cada jogador
 	public static void calculateTotal()
 	{
 		total[ME]=total[ENEMY]=0.0;
 		
 		for(Planet p : pw.MyPlanets()) 
-			total[ME]+=p.NumShips();
+			total[ME]+=p.NumShips(); // naves nos planetas
 		for(Fleet f : pw.MyFleets())
-			total[ME]+=f.NumShips();
+			total[ME]+=f.NumShips(); // naves viajando
 			
 		for(Planet p : pw.EnemyPlanets())
-			total[ENEMY]+=p.NumShips();
+			total[ENEMY]+=p.NumShips(); // naves nos planetas
 		for(Fleet f : pw.EnemyFleets())
-			total[ENEMY]+=f.NumShips();
+			total[ENEMY]+=f.NumShips(); // naves viajando
 	}
 	
 	public static void setUpHeuristicParams()
@@ -178,49 +178,56 @@ public class SPAMBot
 		int score = tem;
 		for (int i = 1; i < max_turns; i++)
 		{
-			tem = tem + p.GrowthRate() - atacado[p.PlanetID()][i] + ataca[p.PlanetID()][i];
+			// dinâmica da população de naves
+			tem = tem + p.GrowthRate() - atacado[p.PlanetID()][i] + ataca[p.PlanetID()][i]; 
 			if (tem < score)
 				score = tem;
 		}
 		return score;
 	}
 	
+	// peso 0 = peso das naves que perco 
+	// peso 1 = peso para destruir naves do inimigo 
+	// peso 2 = lucro estimado por turno por manter o planeta
+	// peso 3 = lucro tirado do inimigo por turno
 	public static void setPeso(Planet q,double [] peso)
 	{
-		// peso pras naves que eu perco, peso pra tirar nave do inimigo,lucro estimado por turno, lucro tirado do inimigo
-		
-		for(int i=0;i<4;i++)
+		// Pesos treinados ponderam pesos concretos do problema
+		// Significado dos pesos treinados no método extractPesos
+		for(int i=0;i<4;i++) 
 		{
-			peso[i]=treinados[q.Owner()][i][0]
+			peso[i]=treinados[q.Owner()][i][0] // bruto
 					+
-					treinados[q.Owner()][i][1]*(distancia[q.PlanetID()][ENEMY]/(distancia[q.PlanetID()][ENEMY]+distancia[q.PlanetID()][ME]))
+					treinados[q.Owner()][i][1]*(distancia[q.PlanetID()][ENEMY]/(distancia[q.PlanetID()][ENEMY]+distancia[q.PlanetID()][ME])) // pondera pela relação das distâncias
 					+
-					treinados[q.Owner()][i][2]*(lucro[ENEMY]/(lucro[ENEMY]+lucro[ME]))
+					treinados[q.Owner()][i][2]*(lucro[ENEMY]/(lucro[ENEMY]+lucro[ME])) // relação do income de cada jogador
 					+
-					treinados[q.Owner()][i][3]*(total[ENEMY]/(total[ENEMY]+total[ME]));
+					treinados[q.Owner()][i][3]*(total[ENEMY]/(total[ENEMY]+total[ME])); // relação ao total de naves
 					
 					
 		}	
 	}
 	
+	//Calcula o o número de naves no fim de turns turnos.
+	//Com esse valor calculamos quantas naves devemos mandar para conquistar o planeta.
 	public static int calculateEndNumberOfShips(Planet q, int turns)
 	{
-		boolean eh_inimigo = isEnemy(q.Owner());
-		int enemy_score = q.NumShips();
+		boolean eh_inimigo = isEnemy(q.Owner());//se é do inimigo ou neutro
+		int enemy_score = q.NumShips();//naves no inicio
 		for (int j = 1; j <= turns; j++)
 		{
-			if (!eh_inimigo)
+			if (!eh_inimigo)//não é do inimigo
 			{
-				int tira = Math.max(atacado[q.PlanetID()][j], ataca[q.PlanetID()][j]);
+				int tira = Math.max(atacado[q.PlanetID()][j], ataca[q.PlanetID()][j]);//atualização a cada turno
 				enemy_score = enemy_score - tira;
 				if (enemy_score < 0)
 				{
-					if (atacado[q.PlanetID()][j] > ataca[q.PlanetID()][j])
+					if (atacado[q.PlanetID()][j] > ataca[q.PlanetID()][j])//inimigo conquista
 					{
 						eh_inimigo = true;
 						enemy_score = -enemy_score;
 					}
-					else if (atacado[q.PlanetID()][j] < ataca[q.PlanetID()][j])
+					else if (atacado[q.PlanetID()][j] < ataca[q.PlanetID()][j])//eu conquisto
 					{
 						enemy_score = -1;
 						break;
@@ -229,13 +236,14 @@ public class SPAMBot
 						enemy_score = 0;
 				}
 			}
-			else
+			else //planeta é do inimigo
+				//atualização a cada turno
 				enemy_score = enemy_score + q.GrowthRate() + atacado[q.PlanetID()][j] - ataca[q.PlanetID()][j];
 
 		}
 		return enemy_score;
 	}
-	
+	//acha planeta com maior valor de acordo com a heurística
 	public static int[] findMaxPointsPlanet(Planet p, int score)
 	{
 		double[] peso = new double[5];
@@ -244,29 +252,30 @@ public class SPAMBot
 		ans[0] = 0;
 		for (Planet q : pw.NotMyPlanets())
 		{
-			setPeso(q,peso);
+			setPeso(q,peso);//ajusta o vetor de pesos
 
-			int turns = pw.Distance(p.PlanetID(), q.PlanetID());
+			int turns = pw.Distance(p.PlanetID(), q.PlanetID());//quantos turnos demora pra chegar em q saindo de p
 			
 			if (turns > max_turns)// nao ataca se demorar muito...
 				continue;
 
-			int enemy_score = calculateEndNumberOfShips(q, turns);
+			int enemy_score = calculateEndNumberOfShips(q, turns);//número de naves apos turns turnos
 			if (enemy_score < 0 || enemy_score + 1 >= score)
 				continue;
 				
-			double win = (peso[0] + peso[1]) * enemy_score + expectedWin(q, turns, peso);
-			if (win > best)
+			double win = (peso[0] + peso[1]) * enemy_score + expectedWin(q, turns, peso);//valor heurístico do planeta
+			if (win > best)//o planeta achado é melhor do que o anterior
 			{
 				best = win;
-				ans[1] = q.PlanetID();
-				ans[0] = enemy_score + 1;
+				ans[1] = q.PlanetID();//planeta alvo
+				ans[0] = enemy_score + 1;//naves necessárias para o ataque
 			}
 
 		}
-		return ans;
+		return ans;//retorna o planeta e o númeo de naves para atacar
 	}
 	
+	//função principal, chamada a cada turno do jogo
 	public static void DoTurn(PlanetWars pw)
 	{
 		SPAMBot.pw = pw;
@@ -283,19 +292,19 @@ public class SPAMBot
 
 			for (int i = 0; i < max_fleets; i++)
 			{
-				int attack[] = findMaxPointsPlanet(p, score);
+				int attack[] = findMaxPointsPlanet(p, score);//acha o melhor planeta
 				if (attack[0] > 0)
 				{
 					Planet dest = new Planet(attack[1],0,0,0,0.0,0.0);
 					ataca[dest.PlanetID()][pw.Distance(p.PlanetID(), dest.PlanetID())] += attack[0];
-					pw.IssueOrder(p, dest, attack[0]);
+					pw.IssueOrder(p, dest, attack[0]);//manda a ordem de ataque
 					score -= attack[0];
 				}
 			}
 		}
 
 	}
-
+	//ajusta os pesos da heurística
 	public static void extractPesos()
 	{
 		/*for(int i = 0; i < 4; i++)
@@ -304,7 +313,7 @@ public class SPAMBot
 				treinados[NEUTRO][i][j] = Double.valueOf(args[4*i + j]);
 				treinados[ENEMY][i][j] = Double.valueOf(args[16 + 4*i + j]);
 			}*/
-		//valor treinado
+		//valores treinados
 		treinados[NEUTRO][0][0] = -1.079587;
 		treinados[NEUTRO][0][1] = 1.130782;
 		treinados[NEUTRO][0][2] = -1.531771;
