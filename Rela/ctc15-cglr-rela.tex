@@ -20,6 +20,7 @@
 \usepackage{fancyvrb}
 \usepackage{xcolor}
 \usepackage{multirow}
+\usepackage[noend]{algorithmic}
 
 %%%
 %%% TITLE PAGE
@@ -52,7 +53,7 @@
 \renewcommand{\maketitle}{%
  	\begin{titlepage}
 		\begin{center}
-			\includegraphics[scale=0.125]{/Users/firer/Library/TeXShop/Templates/ITA/ita}\\
+			\includegraphics[scale=0.125]{ita}\\
 			\ \\ % forca uma linha em branco
 			\textsc{%
 				\Large Instituto Tecnológico de Aeronáutica\\
@@ -94,7 +95,7 @@
 \fancyhead{}
 \fancyfoot{}
 \fancyhead[LO]{\small\textsf{Exame: \mytitle}}
-%\fancyhead[RO]{\small\textsf{Kawakami, Carvalho, Souza, Almeida}}
+\fancyhead[RO]{\small\textsf{\nouppercase{\rightmark}}}
 \fancyfoot[CO]{\textsf\thepage}
 \setlength{\headheight}{14pt}
 %\setlength{\footheight}{14pt}
@@ -124,6 +125,15 @@
 \newcommand{\Equiv}{\Longleftrightarrow}
 \newcommand{\Impl}{\Longrightarrow}
 \newcommand{\DATAHERE}{\colorbox{yellow}{DADOS}}
+
+\renewcommand\algorithmicfor{\textbf{para}}
+\renewcommand\algorithmicforall{\textbf{para todo}}
+\renewcommand\algorithmicif{\textbf{se}}
+\renewcommand\algorithmicthen{\textbf{então}}
+\renewcommand\algorithmicdo{\textbf{faça}}
+\renewcommand\algorithmicend{\textbf{fim}}
+\renewcommand\algorithmicand{\textbf{e}}
+\newcommand\PROC{\STATE\textbf{procedimento}\ }
 
 %%%
 %%% BEGIN DOCUMENT
@@ -165,6 +175,40 @@ Para cada planeta, é calculado um valor que representa o lucro esperado por ata
 \end{itemize}
 
 Essa estratégia considera os pontos tidos como essenciais para o bom desempenho do jogador e leva em consideração diversos jogos assistidos. A partir desta versão é possível fazer variantes jogarem entre si e selecionar a melhor dentre as opções geradas.
+
+\subsubsection{Detalhamento em algoritmo da estratégia utilizada}
+
+A estratégia geral de jogo, em cada turno, é dada por
+
+\begin{algorithmic}
+	\PROC FaçaTurno()
+	\FORALL {planeta meu $p$}
+		\STATE DefendeOutrosPlanetas($p$)
+		\STATE AtacaOutroPlaneta($p$)
+	\ENDFOR
+	\STATE 
+	\PROC DefendeOutrosPlanetas(planeta meu $p$)
+	\FORALL {planeta meu $q$}
+		\IF {existir $1 \leq t \leq$ MAX\_TURN com Previsão($q$, $t$) $< 0$}
+			\STATE $n \gets  -$Previsão($q$, $t$)
+			\IF {naves sobrando em $p > n$ \AND Distância($p$, $q$) $< t$}
+				\STATE EnviarFrota($p$, $q$, $n$)
+			\ENDIF
+		\ENDIF
+	\ENDFOR
+	\STATE
+	\PROC AtacaOutroPlaneta(planeta meu $p$)
+	\FORALL {planeta não-meu $q$}
+		\STATE $horizonte \gets$ Média(\{Distância($p$, $q$) : $p \in$ meus planetas $\wedge\ q \in$ não-meus planetas\})
+		\IF {Distância($p$, $q$) $\leq horizonte$}
+			\STATE $residuo \gets -$Previsão($q$, $horizonte$)
+			\IF {$residuo \geq 0$ \AND $residuo \leq $ naves sobrando em $p$}
+				\STATE 
+			\ENDIF
+		\ENDIF
+	\ENDFOR
+\end{algorithmic}
+
 
 
 \subsection{Algoritmo genético}
