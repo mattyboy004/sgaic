@@ -134,6 +134,7 @@
 \renewcommand\algorithmicdo{\textbf{faça}}
 \renewcommand\algorithmicend{\textbf{fim}}
 \renewcommand\algorithmicand{\textbf{e}}
+\renewcommand\algorithmicreturn{\textbf{retornar}}
 \newcommand\PROC{\STATE\textbf{procedimento}\ }
 
 %%%
@@ -177,7 +178,6 @@ Para cada planeta, é calculado um valor que representa o lucro esperado por ata
 
 Essa estratégia considera alguns dos pontos tidos como essenciais para o bom desempenho do jogador e leva em consideração diversos jogos assistidos. A partir desta versão é possível fazer variantes jogarem entre si e selecionar a melhor dentre as opções geradas.
 
-<<<<<<< local
 \subsubsection{Detalhamento em algoritmo da estratégia utilizada}
 
 A estratégia geral de jogo, em cada turno, é dada por
@@ -200,21 +200,26 @@ A estratégia geral de jogo, em cada turno, é dada por
 	\ENDFOR
 	\STATE
 	\PROC AtacaOutroPlaneta(planeta meu $p$)
+	\STATE $horizonte \gets$ Média(\{Distância($x$, $y$) : $x \in$ meus planetas $\wedge\ y \in$ não-meus planetas\})
 	\FORALL {planeta não-meu $q$}
-		\STATE $horizonte \gets$ Média(\{Distância($p$, $q$) : $p \in$ meus planetas $\wedge\ q \in$ não-meus planetas\})
+		\FORALL {$peso_i$}
+			\STATE $\displaystyle peso_i \gets param_{i, 0} + param_{i,1}\frac{\text{Média}(\{\text{Distância}(q, x) : x \in \text{planetas meus}\})}{\text{Média}()\{\text{Distância}(q, x) : x \in \text{planetas}\}}$
+			
+			$\displaystyle \qquad + param_{i,2}\cdot\frac{\sum_{\text{planeta meu }i} \operatorname{TaxaDeCrescimento}(i)}{\sum_{\text{planeta }i} \operatorname{TaxaDeCrescimento}(i)} + param_{i,3}\cdot\frac{\text{TotalNavesMinhas}}{\text{TotalNaves}}$
+		\ENDFOR
 		\IF {Distância($p$, $q$) $\leq horizonte$}
 			\STATE $residuo \gets -$Previsão($q$, $horizonte$)
 			\IF {$residuo \geq 0$ \AND $residuo \leq $ naves sobrando em $p$}
-				\STATE 
+				\STATE $d \gets$ Distância($p$, $q$)
+				\STATE $ganhonaves \gets (horizonte-d)\cdot$TaxaDeCrescimento($q$)
+				\STATE $ganhototal \gets peso_0 \cdot residuo + peso_1 \cdot ganhonaves$
 			\ENDIF
 		\ENDIF
 	\ENDFOR
+	\STATE EnviarFrota($p$, $q$ com melhor $ganhototal$, $residuo$)
 \end{algorithmic}
 
-
-=======
-Um detalhamento completo da heurística encontra-se no código em anexo, com comentários que facilitam o entendimento.
->>>>>>> other
+A função \verb|Previsão(q, t)|  retorna o estado de um planeta ao fim de MAX\_TURNs ou a derrota numa batalha.
 
 \subsection{Algoritmo genético}
 Para a execução do algoritmo foi definido como cromossomo o conjunto de trinta e dois pesos, sendo cada peso um alelo. Uma população é o conjunto de sessenta cromossomos. A população inicial foi gerada aleatoriamente.
