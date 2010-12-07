@@ -21,7 +21,7 @@
 \usepackage{fancyvrb}
 \usepackage{xcolor}
 \usepackage{multirow}
-\usepackage[noend]{algorithmic}
+\usepackage{algorithmic}
 
 %%%
 %%% TITLE PAGE
@@ -95,13 +95,15 @@
 \pagestyle{fancy}
 \fancyhead{}
 \fancyfoot{}
-\fancyhead[LO]{\small\textsf{Exame: \mytitle}}
+\fancyhead[LO]{\small\textsf{Trabalho de Exame: \mytitle}}
 \fancyhead[RO]{\small\textsf{\nouppercase{\rightmark}}}
 \fancyfoot[CO]{\textsf\thepage}
 \setlength{\headheight}{14pt}
 %\setlength{\footheight}{14pt}
 \renewcommand{\headrulewidth}{0.4pt} 
 %\renewcommand{\footrulewidth}{0.4pt}
+\renewcommand{\sectionmark}[1]{\markright{\thesection.\ #1}}
+\renewcommand{\subsectionmark}[1]{\markright{\thesubsection.\ #1}}
 
 %%%rr
 %%% MANY FLOATS
@@ -136,6 +138,7 @@
 \renewcommand\algorithmicand{\textbf{e}}
 \renewcommand\algorithmicreturn{\textbf{retornar}}
 \newcommand\PROC{\STATE\textbf{procedimento}\ }
+\newcommand\ENDPROC{\STATE\textbf{fim procedimento}}
 
 %%%
 %%% BEGIN DOCUMENT
@@ -150,7 +153,14 @@
 Fazer um jogador autônomo para Planet Wars, jogo usado na competição do Google Ai-Contest do ano de 2010. Esse jogador deve aplicar os conceitos e algoritmos vistos na matéria de Inteligência Artificial.
 
 \section{Introdução}
-Planet Wars é um jogo entre dois ou mais jogadores, cujo objetivo é, ao final dos turnos, ter a maior frota de naves dentre todos os participantes. Apesar poder ser jogado com vários jogadores, todas as partidas realizadas, tanto nos testes como na competição, foram realizadas entre dois adversários.
+Planet Wars (Figura~\ref{fig:pw}) é um jogo entre dois ou mais jogadores, cujo objetivo é, ao final dos turnos, ter a maior frota de naves dentre todos os participantes. Apesar poder ser jogado com vários jogadores, todas as partidas realizadas, tanto nos testes como na competição, foram realizadas entre dois adversários.
+
+\begin{figure}[b]
+	\centering
+	\includegraphics[width=.8\textwidth]{pw}
+	\caption{Planet Wars}
+	\label{fig:pw}
+\end{figure}
 
 O jogo é dividido em turnos no qual ambos jogadores tem todas informações relevantes disponíveis para tomar suas decisões e enviar frotas para combate. O combate entre frotas ocorre nos planetas, cada nave destrói exatamente uma nave inimiga e também é destruída. Ao final do combate quem tiver o maior número de naves sobreviventes no planeta o domina. Se restarem 0 naves o dono do planeta não muda. O jogador com planetas sob seu domínio tem sua frota local aumentada de acordo com a taxa de crescimento específica, a qual depende do tamanho do planeta dominado.
 
@@ -165,64 +175,71 @@ Essa versão inicial foi colocada no servidor do Google Ai-Contest e já apresen
 \subsection{{\em Bot} com estratégia básica}
 Inicialmete foi implementado um {\em bot} com estratégia básica. Toda a avaliação do estado do jogo considera um certo número de jogadas a frente, chamado horizonte. Esse horizonte funciona como uma poda de considerações muito distantes que poderiam atrasar o jogador e evita considerações que não fazem sentido, pois a previsão não considera que haverão jogadas, i.e., essa aboradagem avalia o jogo daqui a um número de jogadas se todos os jogadores tivessem como suas próximas ações não fazer nada. Esse horizonte é calculado levando em consideração a distância média entre planetas pertencentes ao {\em bot} e os planetas dominados pelo adversário.
 
-A estratégia de jogo pode ser definida pelos passos:
+A estratégia de jogo pode ser definida, de maneira geral, pelos passos:
 
-\begin{itemize}
+\begin{enumerate}
 	\item Para cada planeta acha-se quantas naves podem ser mandadas para o ataque sem que o planeta fique muito 		desprotegido e possa ser facilmente conquistado. 
 Para isso, analisa-se as frotas que o estão atacando, achando quantas naves de defesa ele perderia a cada turno até o horizonte. O valor restante de naves ao atingir o horizonte é o valor que é considerado disponível para ataque e defesa, um valor negativo significa perda do domínio.
 	\item Cada planeta com naves de crédito tenta defender outros planetas.
 Cada planeta pertencente ao jogador busca outros planetas que serão consquistados pelo inimigo (previsão negativa no item anterior) tentando fornecer naves suficientes para evitar essa perda. Essa ajuda a planetas vizinhos está condicionada à manutenção do domínio do planeta de origem das naves, caso a ajuda signifique perder o planeta original a ajuda não acontecerá. A ajuda também considera o tempo que a ajuda demorará para chegar ao planeta ajudado, se ele for conquistado antes de ser possível chegar a ajuda ela não será enviada.
 	\item Com as naves restantes, após defender a si mesmo e fornecer ajuda a planetas aliados, cada planeta busca entre os planetas neutros e do inimigo aquele que apresenta o maior ganho esperado e realiza o ataque.
 Para cada planeta, é calculado um valor que representa o lucro esperado por atacá-lo. Dentro desse lucro é levado em consideração naves perdidas no ataque, naves perdidas pelo inimigo, quantas naves seriam ganhas e quantas naves o inimigo deixaria de ganhar devido à taxa de crescimento fornecida pelo planeta. Cada um desses critérios é ponderado com o uso de quatro pesos, que representam uma parte do estado do jogo tais como a distância do planeta aos outros (amigos e inimigos) o relação do lucro de cada jogador e a relação de naves totais de cada jogador.
-\end{itemize}
+\end{enumerate}
 
 Essa estratégia considera alguns dos pontos tidos como essenciais para o bom desempenho do jogador e leva em consideração diversos jogos assistidos. A partir desta versão é possível fazer variantes jogarem entre si e selecionar a melhor dentre as opções geradas.
 
 \subsubsection{Detalhamento em algoritmo da estratégia utilizada}
 
-A estratégia geral de jogo, em cada turno, é dada por
+A estratégia de jogo, em cada turno, é dada por
 
-\begin{algorithmic}
+\begin{algorithmic}[1]
 	\PROC FaçaTurno()
 	\FORALL {planeta meu $p$}
 		\STATE DefendeOutrosPlanetas($p$)
 		\STATE AtacaOutroPlaneta($p$)
 	\ENDFOR
-	\STATE 
+	\ENDPROC
+\end{algorithmic}
+\begin{algorithmic}[1]
 	\PROC DefendeOutrosPlanetas(planeta meu $p$)
 	\FORALL {planeta meu $q$}
-		\IF {existir $1 \leq t \leq$ MAX\_TURN com Previsão($q$, $t$) $< 0$}
+		\IF {existe $1 \leq t \leq$ MAX\_TURN com Previsão($q$, $t$) $< 0$}
 			\STATE $n \gets  -$Previsão($q$, $t$)
 			\IF {naves sobrando em $p > n$ \AND Distância($p$, $q$) $< t$}
 				\STATE EnviarFrota($p$, $q$, $n$)
 			\ENDIF
 		\ENDIF
 	\ENDFOR
-	\STATE
+	\ENDPROC
+\end{algorithmic}
+\begin{algorithmic}[1]
 	\PROC AtacaOutroPlaneta(planeta meu $p$)
-	\STATE $horizonte \gets$ Média(\{Distância($x$, $y$) : $x \in$ meus planetas $\wedge\ y \in$ não-meus planetas\})
+	\STATE $\displaystyle horizonte \gets \frac 3 2 \text{Média}(\{\text{Distância}(x, y) : x \in \text{meus planetas} \wedge y \in \text{não-meus planetas}\})+10$
 	\FORALL {planeta não-meu $q$}
-		\FORALL {$peso_i$}
-			\STATE $\displaystyle peso_i \gets param_{i, 0} + param_{i,1}\frac{\text{Média}(\{\text{Distância}(q, x) : x \in \text{planetas meus}\})}{\text{Média}()\{\text{Distância}(q, x) : x \in \text{planetas}\}}$
-			
-			$\displaystyle \qquad + param_{i,2}\cdot\frac{\sum_{\text{planeta meu }i} \operatorname{TaxaDeCrescimento}(i)}{\sum_{\text{planeta }i} \operatorname{TaxaDeCrescimento}(i)} + param_{i,3}\cdot\frac{\text{TotalNavesMinhas}}{\text{TotalNaves}}$
-		\ENDFOR
 		\IF {Distância($p$, $q$) $\leq horizonte$}
 			\STATE $residuo \gets -$Previsão($q$, $horizonte$)
-			\IF {$residuo \geq 0$ \AND $residuo \leq $ naves sobrando em $p$}
+			\IF {$residuo \geq 0$ \AND $residuo \leq $ naves sobrando em $p$} \STATE \COMMENT {se o planeta não for meu e for possível tomar}
 				\STATE $d \gets$ Distância($p$, $q$)
-				\STATE $ganhonaves \gets (horizonte-d)\cdot$TaxaDeCrescimento($q$)
-				\STATE $ganhototal \gets peso_0 \cdot residuo + peso_1 \cdot ganhonaves$
+				\STATE $ganhonaves \gets (horizonte-d)\cdot\text{TaxaDeCrescimento}(q)$
+				\STATE $ganhototal \gets (peso_0+peso_1) \cdot residuo + (peso_2+peso_3) \cdot ganhonaves$
 			\ENDIF
 		\ENDIF
 	\ENDFOR
-	\STATE EnviarFrota($p$, $q$ com melhor $ganhototal$, $residuo$)
+	\STATE EnviarFrota($p$, $q$ com melhor $ganhototal$, $residuo$ correspondente)
+	\ENDPROC
 \end{algorithmic}
 
-A função \verb|Previsão(q, t)|  retorna o estado de um planeta ao fim de MAX\_TURNs ou a derrota numa batalha.
+A função Previsão(q, t)  simula, dadas as naves atualmente no espaço, todas as chegadas de frota até o tempo $t$, e retorna $\text{Previsão}(q, t) > 0$ o número de naves minhas no planeta se for meu e $\text{Previsão}(q, t) < 0$ o número de naves oponentes no planeta se não for meu. Além disso, $peso_i$ obedece à expressão
+\begin{align*}
+	peso_i &= param_{k,i,0} \\
+		&+ param_{k,i,1}\cdot\frac{\text{Média}(\{\text{Distância}(q, x) : x \in \text{planetas inimigos}\})}{\text{Média}(\{\text{Distância}(q, x) : x \in \text{planetas}\})}\\
+		&+ param_{k,i,2}\cdot\frac{\sum_{\text{planeta inimigos }j} \operatorname{TaxaDeCrescimento}(j)}{\sum_{\text{planeta }j} \operatorname{TaxaDeCrescimento}(j)}\\
+		&+ param_{k,i,3}\cdot\frac{\text{TotalNavesInimigas}}{\text{TotalNaves}}
+\end{align*}
+em que $0 \leq k < 2$ varia se o planeta sendo considerado é neutro ou inimigo, e $param_{k,i,j}$ são os parâmetros de ponderação que serão treinados por meio de evolução por algoritmo genético.
 
 \subsection{Algoritmo genético}
-Para a execução do algoritmo foi definido como cromossomo o conjunto de trinta e dois pesos, sendo cada peso um alelo. Uma população é o conjunto de sessenta cromossomos. A população inicial foi gerada aleatoriamente.
+Para a execução do algoritmo foi definido como cromossomo o conjunto de trinta e dois pesos ($param_{i,j}, 0 \leq k < 2, 0 \leq i < 4, 0 \leq j < 4$), sendo cada peso um alelo. Uma população é o conjunto de sessenta cromossomos. A população inicial foi gerada aleatoriamente.
 
 Após gerar a população inicial, o programa entra em um loop infinito de treinamento no qual repete as seguintes ações: salva a geração, promove a seleção natural e obtém a próxima geração. Salvar a geração significa simplesmente salvar os pesos de todos os elementos que a compõe em um arquivo. Esses arquivos funcionam como uma espécie de controle de versão.
 
@@ -246,7 +263,7 @@ O processo de evolução foi realizado duas vezes. Na primeira o {\em bot} origi
 
 No decocorrer da segunda evolução, mais especificamente na geração 44, foi possível notar que a população havia mais uma vez convergido, a maior parte dos indíviduos eram razoavelmente semelhantes. Foi realizado um teste, jogando todos os mapas, realizando o confronto da versão original do {\em bot} contra a versão evoluída. O placar obtido foi 56 vitórias da nova versão, 43 vitórias da versão original e 1 empate. Apesar de não ser uma vitória expressiva, mostra evolução.
 
-COLOCAR O RESULTADO DO TORNEIO
+No torneio realizado em sala de aula, o {\em bot} resultante obteve a segunda colocação, perdendo apenas uma partida.
 
 \section{Possíveis melhorias}
 O programa poderia levar em conta outros fatores do estado do jogo para a avaliação do lucro de um planeta. Uma estratégia não implementada que é utilizada pelos {\em bots} com melhor resultado é o uso das chamadas {\em rotas de abastecimento}, na qual o {\em bot} mantém um fluxo de naves saindo dos planetas mais afastados do inimigo para os planetas mais próximos, de modo que ele tem mais naves na região de disputa. Outra melhoria seria o ataque e defesa em conjunto, onde um planeta não tem naves suficientes para conquistar ou defender um planeta, mas junto com outros poderia ter. Por fim, o {\em bot} não avalia as jogadas do adversário, fator que pode ser importante para as decisões das jogadas.
